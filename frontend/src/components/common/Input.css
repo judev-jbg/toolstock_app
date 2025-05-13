@@ -1,0 +1,62 @@
+.input-container {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.input-container.full-width {
+  width: 100%;
+}
+
+.input-container label {
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 0.75rem;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.input-container input {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  font-family: "Manrope", sans-serif;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: var(--border-radius);
+  background-color: #f9f9f9;
+  transition: var(--transition);
+}
+
+.input-container input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px var(--primary-color);
+}
+
+.input-container.error input {
+  border-color: var(--danger-color);
+}
+
+.input-error {
+  margin-top: 0.25rem;
+  color: var(--danger-color);
+  font-size: 0.75rem;
+}
+
+/* Si hay icono, añadir padding a la izquierda */
+.input-icon + input {
+  padding-left: 2.5rem;
+}

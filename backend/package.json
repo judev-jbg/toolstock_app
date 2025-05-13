@@ -2,6 +2,11 @@
   "name": "backend",
   "version": "1.0.0",
   "main": "index.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "lint": "eslint ."
+  },
   "license": "MIT",
   "dependencies": {
     "bcryptjs": "^3.0.2",
@@ -9,11 +14,13 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-validator": "^7.2.1",
+    "form-data": "^4.0.2",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.14.2",
     "morgan": "^1.10.0",
-    "winston": "^3.17.0"
+    "winston": "^3.17.0",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "eslint": "^9.26.0",

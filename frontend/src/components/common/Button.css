@@ -1,0 +1,90 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Manrope", sans-serif;
+  font-weight: 600;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+  white-space: nowrap;
+  gap: 0.5rem;
+}
+
+/* Variantes */
+.button.primary {
+  background-color: var(--primary-color);
+  color: var(--text-dark);
+}
+
+.button.primary:hover {
+  background-color: var(--primary-color-hover);
+}
+
+.button.secondary {
+  background-color: var(--secondary-color);
+  color: var(--text-light);
+}
+
+.button.secondary:hover {
+  background-color: rgba(66, 66, 66, 0.8);
+}
+
+.button.outline {
+  background-color: transparent;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+}
+
+.button.outline:hover {
+  background-color: var(--primary-color);
+  color: var(--text-dark);
+}
+
+.button.danger {
+  background-color: var(--danger-color);
+  color: var(--text-light);
+}
+
+.button.danger:hover {
+  background-color: rgba(253, 89, 87, 0.8);
+}
+
+/* Tamaños */
+.button.small {
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+  height: 2rem;
+}
+
+.button.medium {
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+  height: 2.5rem;
+}
+
+.button.large {
+  font-size: 1.125rem;
+  padding: 0.75rem 1.5rem;
+  height: 3rem;
+}
+
+/* Ancho completo */
+.button.full-width {
+  width: 100%;
+}
+
+/* Deshabilitado */
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Icono */
+.button-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
