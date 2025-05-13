@@ -22,6 +22,14 @@ app.use(cors()); // Permitir CORS
 app.use(express.json()); // Parsear body como JSON
 app.use(morgan('dev')); // Logging de HTTP requests
 
+const exportDirs = ['exports', 'exports/reports', 'exports/shipments', 'uploads'];
+exportDirs.forEach((dir) => {
+  const dirPath = path.join(__dirname, '..', dir);
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+});
+
 // Conectar a MongoDB
 connectDB();
 

@@ -1,4 +1,5 @@
 const express = require('express');
+const { check } = require('express-validator');
 const {
   getOrders,
   getOrderById,
@@ -68,5 +69,12 @@ router.post('/shipments/process', processShipments);
 router.get('/counts', getOrderCounts);
 
 router.post('/export-for-gls', protect, exportOrdersForGLS);
+
+router.post(
+  '/orders/:id/mark-for-shipment',
+  [check('markForShipment').isBoolean().withMessage('markForShipment must be a boolean')],
+  checkValidationResult,
+  markOrderForShipment
+);
 
 module.exports = router;

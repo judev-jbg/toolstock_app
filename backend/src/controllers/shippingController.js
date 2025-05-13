@@ -6,7 +6,7 @@ const Shipment = require('../models/shipmentModel');
 const fs = require('fs');
 const path = require('path');
 const { createLogger } = require('../utils/logger');
-
+const { generateExcel } = require('../utils/excelGenerator');
 const logger = createLogger('shippingController');
 
 /**
@@ -329,6 +329,103 @@ const updateShipmentStatuses = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Process shipments for marked orders
+ * @route   POST /api/shipping/gls/process-shipments
+ * @access  Private
+ */
+const processShipments = async (req, res) => {
+  try {
+    const { shipmentType = 'isFile' } = req.body;
+
+    // Fetch orders marked for shipment
+    const pendingShipments = await Shipment.find({
+      process: shipmentType,
+      fileGenerateName: null,
+    });
+
+    if (pendingShipments.length === 0) {
+      return res.status(404).json({ message: 'No pending shipments found' });
+    }
+
+    // Generate unique filename with timestamp (similar to PHP implementation)
+    const fileGenerateName = `Envios_${moment().format('DDMMYYYY_HHmmss')}.xlsx`;
+
+    // Update shipments with the generated filename
+    await Shipment.updateMany(
+      { process: shipmentType, fileGenerateName: null },
+      {
+        fileGenerateName,
+        exported: true,
+        updateDateTime: new Date(),
+      }
+    );
+
+    // Update orders to mark them as processed
+    const orderIds = pendingShipments.map((shipment) => shipment.idOrder);
+
+    await Order.updateMany(
+      {
+        $or: [{ amazonOrderId: { $in: orderIds } }, { prestashopOrderId: { $in: orderIds } }],
+        markForShipment: true,
+      },
+      { markForShipment: false }
+    );
+
+    // Return the updated shipments
+    const updatedShipments = await Shipment.find({ fileGenerateName });
+
+    res.json({
+      success: true,
+      message: 'Shipments processed successfully',
+      fileName: fileGenerateName,
+      shipments: updatedShipments,
+    });
+  } catch (error) {
+    console.error('Error processing shipments:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const generateShipmentsCsv = async (req, res) => {
+  try {
+    const { shipments } = req.body;
+
+    if (!shipments || !Array.isArray(shipments) || shipments.length === 0) {
+      return res.status(400).json({ message: 'Shipments data is required' });
+    }
+
+    // Format data for Excel
+    const formattedData = shipments.map((shipment) => ({
+      Servicio: shipment.servicio || 37,
+      Horario: shipment.horario || 3,
+      Destinatario: shipment.destinatario,
+      Direccion: shipment.direccion,
+      Pais: shipment.pais || 'ES',
+      CP: shipment.cp,
+      Poblacion: shipment.poblacion,
+      Telefono: shipment.telefono || '',
+      Email: shipment.email || 'orders@toolstock.info',
+      Departamento: shipment.departamento || '',
+      Contacto: shipment.contacto || '',
+      Observaciones: shipment.observaciones || '',
+      Bultos: shipment.bultos || 1,
+      Movil: shipment.movil || '',
+      RefC: shipment.refC || '',
+    }));
+
+    // Generate Excel file
+    const fileName = `GLS_Shipments_${moment().format('YYYYMMDD_HHmmss')}.xlsx`;
+    const filePath = generateExcel(formattedData, fileName, 'Shipments');
+
+    // Send file as attachment
+    res.download(filePath, fileName);
+  } catch (error) {
+    console.error('Error generating shipments CSV:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
   createGLSShipment,
   getGLSShipmentLabel,
@@ -337,4 +434,6 @@ module.exports = {
   prepareShipmentsFromOrders,
   bulkCreateGLSShipments,
   updateShipmentStatuses,
+  processShipments,
+  generateShipmentsCsv,
 };

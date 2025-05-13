@@ -2,6 +2,8 @@ const Order = require('../models/orderModel');
 const Shipment = require('../models/shipmentModel');
 const { validationResult } = require('express-validator');
 const moment = require('moment');
+const { createLogger } = require('../utils/logger');
+const logger = createLogger('orderController');
 
 /**
  * @desc    Obtener todas las órdenes con filtros
@@ -170,8 +172,11 @@ const updateOrderShipping = async (req, res) => {
     const updatedOrder = await order.save();
     res.json(updatedOrder);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error en el servidor' });
+    logger.error(`Error in getOrderById: ${error.message}`, {
+      stack: error.stack,
+      orderId: req.params.id,
+    });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -221,7 +226,7 @@ const getPendingOrdersUntilToday = async (req, res) => {
     const { limit = 50, page = 1 } = req.query;
     const skip = (page - 1) * limit;
 
-    // Fecha actual al inicio del día
+    // Use moment.js for date handling - matching the PHP implementation
     const today = moment().startOf('day');
 
     const filter = {
@@ -246,8 +251,8 @@ const getPendingOrdersUntilToday = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error al obtener órdenes pendientes hasta hoy:', error);
-    res.status(500).json({ message: 'Error en el servidor' });
+    console.error('Error fetching pending orders until today:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -574,7 +579,7 @@ const getShipmentsHistory = async (req, res) => {
 };
 
 /**
- * @desc    Obtener envíos por nombre de archivo
+ * @desc    Get shipments history by filename
  * @route   GET /api/orders/shipments/file/:fileName
  * @access  Private
  */
@@ -587,9 +592,7 @@ const getShipmentsByFileName = async (req, res) => {
     });
 
     if (shipments.length === 0) {
-      return res
-        .status(404)
-        .json({ message: 'No se encontraron envíos con ese nombre de archivo' });
+      return res.status(404).json({ message: 'No shipments found with this filename' });
     }
 
     res.json({
@@ -597,8 +600,8 @@ const getShipmentsByFileName = async (req, res) => {
       shipments,
     });
   } catch (error) {
-    console.error('Error al obtener envíos por nombre de archivo:', error);
-    res.status(500).json({ message: 'Error en el servidor' });
+    console.error('Error fetching shipments by filename:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -858,7 +861,10 @@ const processShipments = async (req, res) => {
  */
 const getOrderCounts = async (req, res) => {
   try {
-    // Obtener contadores para cada categoría
+    // Get the current date
+    const today = moment().startOf('day');
+
+    // Counts for different categories
     const pending = await Order.countDocuments({
       orderStatus: 'Pendiente de envío',
       pendingWithoutStock: { $ne: true },
@@ -867,13 +873,13 @@ const getOrderCounts = async (req, res) => {
     const pendingUntilToday = await Order.countDocuments({
       orderStatus: 'Pendiente de envío',
       pendingWithoutStock: { $ne: true },
-      latestShipDate: { $lte: moment().startOf('day').toDate() },
+      latestShipDate: { $lte: today.toDate() },
     });
 
     const delayed = await Order.countDocuments({
       orderStatus: 'Pendiente de envío',
       pendingWithoutStock: { $ne: true },
-      latestShipDate: { $lt: moment().startOf('day').toDate() },
+      latestShipDate: { $lt: today.toDate() },
     });
 
     const outOfStock = await Order.countDocuments({
@@ -884,13 +890,13 @@ const getOrderCounts = async (req, res) => {
     const outOfStockUntilToday = await Order.countDocuments({
       orderStatus: 'Pendiente de envío',
       pendingWithoutStock: true,
-      latestShipDate: { $lte: moment().startOf('day').toDate() },
+      latestShipDate: { $lte: today.toDate() },
     });
 
     const outOfStockDelayed = await Order.countDocuments({
       orderStatus: 'Pendiente de envío',
       pendingWithoutStock: true,
-      latestShipDate: { $lt: moment().startOf('day').toDate() },
+      latestShipDate: { $lt: today.toDate() },
     });
 
     const shipFake = await Order.countDocuments({
@@ -908,8 +914,8 @@ const getOrderCounts = async (req, res) => {
       shipFake,
     });
   } catch (error) {
-    console.error('Error al obtener contadores de órdenes:', error);
-    res.status(500).json({ message: 'Error en el servidor' });
+    console.error('Error getting order counts:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
