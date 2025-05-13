@@ -82,6 +82,59 @@ export const orderService = {
     const response = await api.get("/orders/readytoship");
     return response.data;
   },
+
+  getOrderCounts: async () => {
+    const response = await api.get("/api/orders/counts");
+    return response.data;
+  },
+
+  // Método para obtener pedidos pendientes hasta hoy
+  getPendingOrdersUntilToday: async (params = {}) => {
+    const response = await api.get("/api/orders/pending/until-today", {
+      params,
+    });
+    return response.data;
+  },
+
+  // Método para obtener pedidos vencidos
+  getDelayedOrders: async (params = {}) => {
+    const response = await api.get("/api/orders/pending/delayed", { params });
+    return response.data;
+  },
+};
+
+// Servicio para envíos
+export const shippingService = {
+  createGLSShipment: async (shipmentData) => {
+    const response = await api.post("/shipping/gls/create", shipmentData);
+    return response.data;
+  },
+  getGLSShipmentLabel: async (expeditionNumber) => {
+    const response = await api.get(`/shipping/gls/label/${expeditionNumber}`, {
+      responseType: "blob",
+    });
+    return response.data;
+  },
+  generateGLSShipmentsCsv: async (shipments) => {
+    const response = await api.post(
+      "/shipping/gls/generate-csv",
+      { shipments },
+      {
+        responseType: "blob",
+      }
+    );
+    return response.data;
+  },
+  prepareShipmentsFromOrders: async () => {
+    const response = await api.post(
+      "/shipping/gls/prepare-shipments",
+      {},
+      {
+        responseType: "blob",
+      }
+    );
+    return response.data;
+  },
 };
 
 // Servicio para integraciones
@@ -124,6 +177,12 @@ export const integrationService = {
     );
     return response.data;
   },
+  syncOrderStatuses: async (days = 7) => {
+    const response = await api.post("/integrations/prestashop/sync-statuses", {
+      days,
+    });
+    return response.data;
+  },
 
   // Sincronización general
   fullSync: async () => {
@@ -150,40 +209,6 @@ export const integrationService = {
       }
     );
 
-    return response.data;
-  },
-};
-
-// Servicio para envíos
-export const shippingService = {
-  createGLSShipment: async (shipmentData) => {
-    const response = await api.post("/shipping/gls/create", shipmentData);
-    return response.data;
-  },
-  getGLSShipmentLabel: async (expeditionNumber) => {
-    const response = await api.get(`/shipping/gls/label/${expeditionNumber}`, {
-      responseType: "blob",
-    });
-    return response.data;
-  },
-  generateGLSShipmentsCsv: async (shipments) => {
-    const response = await api.post(
-      "/shipping/gls/generate-csv",
-      { shipments },
-      {
-        responseType: "blob",
-      }
-    );
-    return response.data;
-  },
-  prepareShipmentsFromOrders: async () => {
-    const response = await api.post(
-      "/shipping/gls/prepare-shipments",
-      {},
-      {
-        responseType: "blob",
-      }
-    );
     return response.data;
   },
 };

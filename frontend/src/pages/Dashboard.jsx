@@ -1,3 +1,5 @@
+// frontend/src/pages/Dashboard.jsx (actualización)
+
 import React, { useState, useEffect } from "react";
 import {
   FaBoxOpen,
@@ -6,6 +8,7 @@ import {
   FaTruck,
 } from "react-icons/fa";
 import Button from "../components/common/Button";
+import SyncPanel from "../components/integrations/SyncPanel";
 import { orderService, integrationService } from "../services/api";
 import "./Dashboard.css";
 
@@ -16,7 +19,7 @@ const Dashboard = () => {
     readyToShip: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
+  const [syncPanelVisible, setSyncPanelVisible] = useState(false);
 
   // Cargar estadísticas al montar el componente
   useEffect(() => {
@@ -52,28 +55,26 @@ const Dashboard = () => {
     }
   };
 
-  // Sincronizar pedidos de Amazon
-  const handleSyncAmazon = async () => {
-    setSyncing(true);
-    try {
-      await integrationService.syncAmazonOrders(3); // Últimos 3 días
-      // Recargar estadísticas
-      await fetchStats();
-    } catch (error) {
-      console.error("Error al sincronizar pedidos de Amazon:", error);
-    } finally {
-      setSyncing(false);
-    }
+  // Manejar cierre de sincronización
+  const handleSyncComplete = () => {
+    fetchStats(); // Recargar estadísticas después de sincronizar
   };
 
   return (
     <div className="dashboard">
       <div className="dashboard-header">
         <h1>Dashboard</h1>
-        <Button onClick={handleSyncAmazon} disabled={syncing} icon={<FaSync />}>
-          {syncing ? "Sincronizando..." : "Sincronizar Pedidos"}
+        <Button
+          onClick={() => setSyncPanelVisible(!syncPanelVisible)}
+          icon={<FaSync />}
+        >
+          {syncPanelVisible
+            ? "Ocultar sincronización"
+            : "Mostrar sincronización"}
         </Button>
       </div>
+
+      {syncPanelVisible && <SyncPanel onSyncComplete={handleSyncComplete} />}
 
       <div className="stats-grid">
         {/* Tarjeta de Pedidos Pendientes */}

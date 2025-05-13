@@ -65,4 +65,8 @@ router.route('/shipment/:id').patch(updateShipment).delete(deleteShipment);
 
 router.post('/shipments/process', processShipments);
 
+router.get('/counts', getOrderCounts);
+
+router.post('/export-for-gls', protect, exportOrdersForGLS);
+
 module.exports = router;

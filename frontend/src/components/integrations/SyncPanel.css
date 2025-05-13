@@ -1,0 +1,91 @@
+/* frontend/src/components/integrations/SyncPanel.css */
+
+.sync-panel {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.sync-panel-title {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.sync-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.sync-button {
+  flex: 1;
+  min-width: 150px;
+}
+
+.sync-button.full {
+  flex: 2;
+  background-color: var(--primary-color);
+  color: var(--text-dark);
+}
+
+.sync-error {
+  background-color: rgba(253, 89, 87, 0.1);
+  border-left: 3px solid var(--danger-color);
+  color: var(--danger-color);
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.sync-result {
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  padding: 1rem;
+}
+
+.sync-result h3 {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.result-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  padding: 0.75rem;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .sync-buttons {
+    flex-direction: column;
+  }
+
+  .sync-button {
+    width: 100%;
+  }
+}

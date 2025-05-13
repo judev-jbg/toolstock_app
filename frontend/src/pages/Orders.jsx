@@ -1,88 +1,25 @@
+// frontend/src/pages/Orders.jsx (actualización)
 import React, { useState, useEffect } from "react";
-import { FaSync, FaTruck } from "react-icons/fa";
+import { useNavigate } from "react-router";
+import { FaSync, FaTruck, FaCheck } from "react-icons/fa";
 import Button from "../components/common/Button";
-import OrdersFilter from "../components/orders/OrdersFilter";
-import OrderCard from "../components/orders/OrderCard";
+import OrderFilters from "../components/orders/OrderFilters";
+import OrderDetail from "../components/orders/OrderDetail";
 import { orderService } from "../services/api";
 import "./Orders.css";
 
 const Orders = () => {
-  // Estado para los filtros
-  const [filters, setFilters] = useState([
-    {
-      id: "pending",
-      resource: "/api/orders/pending",
-      label: "Pendientes de envío",
-      count: 0,
-      newBlock: false,
-      active: true,
-    },
-    {
-      id: "pending-today",
-      resource: "/api/orders/pending/until-today",
-      label: "Vencen hoy",
-      count: 0,
-      newBlock: false,
-      active: false,
-    },
-    {
-      id: "pending-delayed",
-      resource: "/api/orders/pending/delayed",
-      label: "Vencidos",
-      count: 0,
-      newBlock: false,
-      active: false,
-    },
-    {
-      id: "outofstock",
-      resource: "/api/orders/outofstock",
-      label: "Sin stock",
-      count: 0,
-      newBlock: true,
-      active: false,
-    },
-    {
-      id: "outofstock-today",
-      resource: "/api/orders/outofstock/until-today",
-      label: "Vencen hoy (sin stock)",
-      count: 0,
-      newBlock: false,
-      active: false,
-    },
-    {
-      id: "outofstock-delayed",
-      resource: "/api/orders/outofstock/delayed",
-      label: "Vencidos (sin stock)",
-      count: 0,
-      newBlock: false,
-      active: false,
-    },
-    {
-      id: "shipfake",
-      resource: "/api/orders/shipfake",
-      label: "Envíos fake",
-      count: 0,
-      newBlock: true,
-      active: false,
-    },
-  ]);
-
-  // Estado para órdenes
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
+  const [activeFilter, setActiveFilter] = useState("pending");
+  const [selectedOrders, setSelectedOrders] = useState([]);
   const [error, setError] = useState(null);
-  const [activeFilterId, setActiveFilterId] = useState("pending");
+  let navigate = useNavigate();
 
-  // Cargar órdenes al montar y cuando cambia el filtro activo
+  // Cargar órdenes al montar y cuando cambia el filtro
   useEffect(() => {
     fetchOrders();
-  }, [activeFilterId]);
-
-  // Cargar contadores para todos los filtros
-  useEffect(() => {
-    fetchAllCounts();
-  }, []);
+  }, [activeFilter]);
 
   // Obtener órdenes según el filtro activo
   const fetchOrders = async () => {
@@ -90,145 +27,112 @@ const Orders = () => {
       setLoading(true);
       setError(null);
 
-      // Encontrar el recurso correspondiente al filtro activo
-      const activeFilter = filters.find(
-        (filter) => filter.id === activeFilterId
-      );
-      if (!activeFilter) return;
+      let response;
+      switch (activeFilter) {
+        case "pending":
+          response = await orderService.getPendingOrders();
+          break;
+        case "pendingUntilToday":
+          response = await orderService.getPendingOrdersUntilToday();
+          break;
+        case "delayed":
+          response = await orderService.getDelayedOrders();
+          break;
+        case "outOfStock":
+          response = await orderService.getOutOfStockOrders();
+          break;
+        case "outOfStockUntilToday":
+          response = await orderService.getOutOfStockOrdersUntilToday();
+          break;
+        case "outOfStockDelayed":
+          response = await orderService.getOutOfStockDelayedOrders();
+          break;
+        case "shipFake":
+          response = await orderService.getShipFakeOrders();
+          break;
+        default:
+          response = await orderService.getPendingOrders();
+      }
 
-      const response = await fetch(activeFilter.resource);
-      const data = await response.json();
-
-      setOrders(data.orders || []);
+      setOrders(response.orders || []);
     } catch (error) {
-      console.error("Error fetching orders:", error);
+      console.error("Error al obtener órdenes:", error);
       setError("Error al cargar los pedidos. Por favor, inténtalo de nuevo.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Obtener contadores para todos los filtros
-  const fetchAllCounts = async () => {
+  // Manejar cambio de filtro
+  const handleFilterChange = (filter) => {
+    setActiveFilter(filter);
+    setSelectedOrders([]);
+  };
+
+  // Manejar marcado de pedido para envío
+  const handleMarkForShipment = async (orderId, isMarked) => {
     try {
-      // Crear un array de promesas para todas las solicitudes
-      const promises = filters.map((filter) =>
-        fetch(filter.resource)
-          .then((response) => response.json())
-          .then((data) => ({
-            id: filter.id,
-            count: data.pagination?.total || 0,
-          }))
-          .catch((error) => {
-            console.error(`Error fetching count for ${filter.id}:`, error);
-            return { id: filter.id, count: 0 };
-          })
-      );
+      await orderService.markOrderForShipment(orderId, isMarked);
 
-      // Esperar a que se completen todas las solicitudes
-      const results = await Promise.all(promises);
-
-      // Actualizar los contadores en el estado de filtros
-      setFilters((prevFilters) =>
-        prevFilters.map((filter) => {
-          const result = results.find((r) => r.id === filter.id);
-          return {
-            ...filter,
-            count: result?.count || 0,
-          };
+      // Actualizar estado local
+      setOrders(
+        orders.map((order) => {
+          if (order._id === orderId || order.amazonOrderId === orderId) {
+            return { ...order, markForShipment: isMarked };
+          }
+          return order;
         })
       );
+
+      // Actualizar seleccionados
+      if (isMarked) {
+        setSelectedOrders([...selectedOrders, orderId]);
+      } else {
+        setSelectedOrders(selectedOrders.filter((id) => id !== orderId));
+      }
     } catch (error) {
-      console.error("Error fetching filter counts:", error);
+      console.error("Error al marcar pedido para envío:", error);
     }
   };
 
-  // Manejar cambio de filtro
-  const handleFilterChange = (filterId) => {
-    setActiveFilterId(filterId);
+  // Manejar cambio de estado sin stock
+  const handleToggleOutOfStock = async (orderId, isOutOfStock) => {
+    try {
+      await orderService.updateOrderStockStatus(orderId, isOutOfStock);
 
-    // Actualizar filtros activos
-    setFilters((prevFilters) =>
-      prevFilters.map((filter) => ({
-        ...filter,
-        active: filter.id === filterId,
-      }))
-    );
+      // Actualizar estado local
+      setOrders(
+        orders.map((order) => {
+          if (order._id === orderId || order.amazonOrderId === orderId) {
+            return { ...order, pendingWithoutStock: isOutOfStock };
+          }
+          return order;
+        })
+      );
+    } catch (error) {
+      console.error("Error al actualizar estado de stock:", error);
+    }
   };
 
-  // Sincronizar pedidos de Amazon
+  // Preparar envíos de pedidos seleccionados
+  const handlePrepareShipment = () => {
+    if (selectedOrders.length > 0) {
+      navigate("/orders-to-ship");
+    }
+  };
+
+  // Sincronizar pedidos
   const handleSyncOrders = async () => {
     try {
-      setSyncing(true);
+      setLoading(true);
       await orderService.syncAmazonOrders(3); // Últimos 3 días
-
-      // Recargar datos
-      await fetchOrders();
-      await fetchAllCounts();
-
-      setSyncing(false);
+      await fetchOrders(); // Recargar pedidos
     } catch (error) {
-      console.error("Error synchronizing orders:", error);
+      console.error("Error al sincronizar pedidos:", error);
       setError("Error al sincronizar pedidos");
-      setSyncing(false);
+    } finally {
+      setLoading(false);
     }
-  };
-
-  // Manejar cambio de estado "Marcar para envío"
-  const handleToggleMarkForShipment = async (orderId, newState) => {
-    try {
-      await orderService.markOrderForShipment(orderId, newState);
-
-      // Actualizar estado local
-      setOrders((prevOrders) =>
-        prevOrders.map((order) => {
-          if ((order._id || order.amazonOrderId) === orderId) {
-            return {
-              ...order,
-              markForShipment: newState,
-            };
-          }
-          return order;
-        })
-      );
-
-      // Recargar contadores
-      await fetchAllCounts();
-    } catch (error) {
-      console.error("Error updating order mark for shipment:", error);
-      setError("Error al actualizar el estado de envío");
-    }
-  };
-
-  // Manejar cambio de estado "Sin stock"
-  const handleToggleOutOfStock = async (orderId, newState) => {
-    try {
-      await orderService.updateOrderStockStatus(orderId, newState);
-
-      // Actualizar estado local
-      setOrders((prevOrders) =>
-        prevOrders.map((order) => {
-          if ((order._id || order.amazonOrderId) === orderId) {
-            return {
-              ...order,
-              pendingWithoutStock: newState,
-            };
-          }
-          return order;
-        })
-      );
-
-      // Recargar contadores
-      await fetchAllCounts();
-    } catch (error) {
-      console.error("Error updating order stock status:", error);
-      setError("Error al actualizar el estado de stock");
-    }
-  };
-
-  // Navegar a la página de preparación de envíos
-  const handlePrepareShipments = () => {
-    // Implementar navegación a página de envíos
   };
 
   return (
@@ -240,20 +144,26 @@ const Orders = () => {
             variant="outline"
             icon={<FaSync />}
             onClick={handleSyncOrders}
-            disabled={syncing}
+            disabled={loading}
           >
-            {syncing ? "Sincronizando..." : "Sincronizar"}
+            {loading ? "Sincronizando..." : "Sincronizar"}
           </Button>
 
-          <Button icon={<FaTruck />} onClick={handlePrepareShipments}>
+          <Button
+            icon={<FaTruck />}
+            onClick={handlePrepareShipment}
+            disabled={loading || selectedOrders.length === 0}
+          >
             Preparar Envíos
+            {selectedOrders.length > 0 && (
+              <span className="selection-count">({selectedOrders.length})</span>
+            )}
           </Button>
         </div>
       </div>
 
-      <OrdersFilter
-        filters={filters}
-        activeFilter={activeFilterId}
+      <OrderFilters
+        activeFilter={activeFilter}
         onFilterChange={handleFilterChange}
       />
 
@@ -268,10 +178,10 @@ const Orders = () => {
           </div>
         ) : (
           orders.map((order) => (
-            <OrderCard
+            <OrderDetail
               key={order._id || order.amazonOrderId}
               order={order}
-              onToggleMarkForShipment={handleToggleMarkForShipment}
+              onMarkForShipment={handleMarkForShipment}
               onToggleOutOfStock={handleToggleOutOfStock}
             />
           ))

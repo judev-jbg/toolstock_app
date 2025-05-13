@@ -1,3 +1,5 @@
+// backend/src/routes/shippingRoutes.js (actualización)
+
 const express = require('express');
 const {
   createGLSShipment,
@@ -5,6 +7,8 @@ const {
   getGLSShipmentStatus,
   generateGLSShipmentsCsv,
   prepareShipmentsFromOrders,
+  bulkCreateGLSShipments,
+  updateShipmentStatuses,
 } = require('../controllers/shippingController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -19,5 +23,7 @@ router.get('/gls/label/:expeditionNumber', getGLSShipmentLabel);
 router.get('/gls/status/:expeditionNumber/:postalCode', getGLSShipmentStatus);
 router.post('/gls/generate-csv', generateGLSShipmentsCsv);
 router.post('/gls/prepare-shipments', prepareShipmentsFromOrders);
+router.post('/gls/bulk-create', bulkCreateGLSShipments);
+router.post('/gls/update-statuses', updateShipmentStatuses);
 
 module.exports = router;

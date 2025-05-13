@@ -519,6 +519,151 @@ class PrestashopOrderService {
       return { success: false, error: error.message };
     }
   }
+
+  /**
+   * Obtiene un pedido por su ID
+   * @param {number} orderId - ID del pedido
+   * @returns {Promise<Object>} Pedido
+   */
+  async getOrderById(orderId) {
+    try {
+      const response = await psApiClient.getById('orders', orderId);
+      return response;
+    } catch (error) {
+      console.error(`Error fetching PrestaShop order ${orderId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Busca un pedido por su referencia
+   * @param {string} reference - Referencia del pedido (normalmente el ID de Amazon)
+   * @returns {Promise<Object>} Pedido o null si no existe
+   */
+  async findOrderByReference(reference) {
+    try {
+      const response = await psApiClient.get('orders', {
+        'filter[reference]': `=${reference}`,
+        display: 'full',
+      });
+
+      if (response && response.orders && response.orders.order) {
+        // Normalizar respuesta
+        const order = Array.isArray(response.orders.order)
+          ? response.orders.order[0]
+          : response.orders.order;
+
+        return { id: order.id, ...order };
+      }
+
+      return null;
+    } catch (error) {
+      console.error(`Error finding PrestaShop order with reference ${reference}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Mapea un estado de PrestaShop a nuestro formato
+   * @param {string} prestashopStatus - Estado de PrestaShop
+   * @returns {string} Estado mapeado
+   */
+  mapOrderStatus(prestashopStatus) {
+    // Mapear estados de PrestaShop a nuestros estados
+    const statusMapping = {
+      1: 'Pendiente de envío',
+      2: 'Enviado',
+      3: 'Entregado',
+      4: 'Enviado',
+      5: 'Cancelado',
+      6: 'Cancelado',
+      7: 'Pendiente de envío',
+      8: 'Pendiente disponibilidad',
+    };
+
+    return statusMapping[prestashopStatus] || 'Pendiente de envío';
+  }
+
+  /**
+   * Actualiza el estado de un pedido en PrestaShop
+   * @param {number} orderId - ID del pedido
+   * @param {string} status - Nuevo estado
+   * @param {string} trackingNumber - Número de seguimiento
+   * @returns {Promise<Object>} Resultado de la actualización
+   */
+  async updateOrderStatus(orderId, status, trackingNumber = null) {
+    try {
+      // Mapear nuestros estados a estados de PrestaShop
+      const stateMapping = {
+        'Pendiente de envío': 1,
+        Enviado: 4,
+        Entregado: 5,
+        Cancelado: 6,
+        'Pendiente disponibilidad': 3,
+      };
+
+      const psStatus = stateMapping[status] || 1;
+
+      // Actualizar el pedido en PrestaShop
+      const orderPayload = {
+        order: {
+          current_state: psStatus,
+        },
+      };
+
+      // Si hay número de seguimiento, actualizarlo también
+      if (trackingNumber) {
+        // Crear un envío en PrestaShop
+        // Nota: esto podría requerir APIs adicionales según PrestaShop
+      }
+
+      const updatedOrder = await psApiClient.update('orders', orderId, orderPayload);
+
+      return updatedOrder;
+    } catch (error) {
+      console.error(`Error updating PrestaShop order ${orderId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Actualiza un pedido en PrestaShop
+   * @param {number} orderId - ID del pedido
+   * @param {Object} orderData - Datos del pedido
+   * @returns {Promise<Object>} Resultado de la actualización
+   */
+  async updateOrder(orderId, orderData) {
+    try {
+      // Mapear nuestros estados a estados de PrestaShop
+      const stateMapping = {
+        'Pendiente de envío': 1,
+        Enviado: 4,
+        Entregado: 5,
+        Cancelado: 6,
+        'Pendiente disponibilidad': 3,
+      };
+
+      // Preparar payload para actualización
+      const orderPayload = {
+        order: {
+          current_state: stateMapping[orderData.orderStatus] || 1,
+        },
+      };
+
+      // Si hay número de referencia, actualizarlo
+      if (orderData.amazonOrderId) {
+        orderPayload.order.reference = orderData.amazonOrderId;
+      }
+
+      // Actualizar el pedido
+      const updatedOrder = await psApiClient.update('orders', orderId, orderPayload);
+
+      return updatedOrder;
+    } catch (error) {
+      console.error(`Error updating PrestaShop order ${orderId}:`, error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new PrestashopOrderService();

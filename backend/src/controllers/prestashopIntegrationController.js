@@ -1,5 +1,10 @@
+// backend/src/controllers/prestashopIntegrationController.js (actualización)
+
 const prestashopOrderService = require('../services/prestashop/orderService');
 const syncService = require('../services/synchronization/syncService');
+const { createLogger } = require('../utils/logger');
+
+const logger = createLogger('prestashopIntegrationController');
 
 /**
  * @desc    Sincronizar pedidos recientes de PrestaShop
@@ -16,13 +21,19 @@ const syncPrestashopOrders = async (req, res) => {
       return res.status(400).json({ message: 'El número de días debe estar entre 1 y 30' });
     }
 
+    logger.info(`Solicitud de sincronización de pedidos PrestaShop: ${daysNum} días`);
+
     // Iniciar la sincronización
     const result = await prestashopOrderService.syncRecentOrders(daysNum);
 
+    logger.info(
+      `Sincronización PrestaShop completada: ${result.stats.created} creados, ${result.stats.updated} actualizados`
+    );
+
     res.json(result);
   } catch (error) {
-    console.error('Error sincronizando pedidos de PrestaShop:', error);
-    res.status(500).json({ message: 'Error en el servidor' });
+    logger.error(`Error sincronizando pedidos de PrestaShop: ${error.message}`);
+    res.status(500).json({ message: 'Error en el servidor', error: error.message });
   }
 };
 
@@ -41,6 +52,10 @@ const syncFromAmazon = async (req, res) => {
       return res.status(400).json({ message: 'El número de días debe estar entre 1 y 30' });
     }
 
+    logger.info(
+      `Solicitud de sincronización Amazon → PrestaShop: ${daysNum} días, soloNuevos: ${onlyNew}`
+    );
+
     // Iniciar la sincronización
     const result = await syncService.syncAmazonToPrestaShop({
       days: daysNum,
@@ -49,8 +64,37 @@ const syncFromAmazon = async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error('Error sincronizando pedidos de Amazon a PrestaShop:', error);
-    res.status(500).json({ message: 'Error en el servidor' });
+    logger.error(`Error sincronizando pedidos de Amazon a PrestaShop: ${error.message}`);
+    res.status(500).json({ message: 'Error en el servidor', error: error.message });
+  }
+};
+
+/**
+ * @desc    Sincronizar estados de pedidos entre plataformas
+ * @route   POST /api/integrations/prestashop/sync-statuses
+ * @access  Private/Admin
+ */
+const syncOrderStatuses = async (req, res) => {
+  try {
+    const { days = 7 } = req.body;
+
+    // Validar que days sea un número entre 1 y 30
+    const daysNum = parseInt(days, 10);
+    if (isNaN(daysNum) || daysNum < 1 || daysNum > 30) {
+      return res.status(400).json({ message: 'El número de días debe estar entre 1 y 30' });
+    }
+
+    logger.info(`Solicitud de sincronización de estados: ${daysNum} días`);
+
+    // Iniciar la sincronización
+    const result = await syncService.syncOrderStatuses({
+      days: daysNum,
+    });
+
+    res.json(result);
+  } catch (error) {
+    logger.error(`Error sincronizando estados de pedidos: ${error.message}`);
+    res.status(500).json({ message: 'Error en el servidor', error: error.message });
   }
 };
 
@@ -61,18 +105,21 @@ const syncFromAmazon = async (req, res) => {
  */
 const fullSync = async (req, res) => {
   try {
+    logger.info('Solicitud de sincronización completa');
+
     // Iniciar la sincronización completa
     const result = await syncService.fullSync();
 
     res.json(result);
   } catch (error) {
-    console.error('Error en la sincronización completa:', error);
-    res.status(500).json({ message: 'Error en el servidor' });
+    logger.error(`Error en la sincronización completa: ${error.message}`);
+    res.status(500).json({ message: 'Error en el servidor', error: error.message });
   }
 };
 
 module.exports = {
   syncPrestashopOrders,
   syncFromAmazon,
+  syncOrderStatuses,
   fullSync,
 };

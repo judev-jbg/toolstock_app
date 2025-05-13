@@ -851,6 +851,68 @@ const processShipments = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Obtener todos los contadores de pedidos para filtros
+ * @route   GET /api/orders/counts
+ * @access  Private
+ */
+const getOrderCounts = async (req, res) => {
+  try {
+    // Obtener contadores para cada categoría
+    const pending = await Order.countDocuments({
+      orderStatus: 'Pendiente de envío',
+      pendingWithoutStock: { $ne: true },
+    });
+
+    const pendingUntilToday = await Order.countDocuments({
+      orderStatus: 'Pendiente de envío',
+      pendingWithoutStock: { $ne: true },
+      latestShipDate: { $lte: moment().startOf('day').toDate() },
+    });
+
+    const delayed = await Order.countDocuments({
+      orderStatus: 'Pendiente de envío',
+      pendingWithoutStock: { $ne: true },
+      latestShipDate: { $lt: moment().startOf('day').toDate() },
+    });
+
+    const outOfStock = await Order.countDocuments({
+      orderStatus: 'Pendiente de envío',
+      pendingWithoutStock: true,
+    });
+
+    const outOfStockUntilToday = await Order.countDocuments({
+      orderStatus: 'Pendiente de envío',
+      pendingWithoutStock: true,
+      latestShipDate: { $lte: moment().startOf('day').toDate() },
+    });
+
+    const outOfStockDelayed = await Order.countDocuments({
+      orderStatus: 'Pendiente de envío',
+      pendingWithoutStock: true,
+      latestShipDate: { $lt: moment().startOf('day').toDate() },
+    });
+
+    const shipFake = await Order.countDocuments({
+      orderStatus: 'Pendiente de envío',
+      isShipFake: true,
+    });
+
+    res.json({
+      pending,
+      pendingUntilToday,
+      delayed,
+      outOfStock,
+      outOfStockUntilToday,
+      outOfStockDelayed,
+      shipFake,
+    });
+  } catch (error) {
+    console.error('Error al obtener contadores de órdenes:', error);
+    res.status(500).json({ message: 'Error en el servidor' });
+  }
+};
+
 module.exports = {
   getOrders,
   getOrderById,
@@ -873,4 +935,5 @@ module.exports = {
   updateShipment,
   deleteShipment,
   processShipments,
+  getOrderCounts,
 };
