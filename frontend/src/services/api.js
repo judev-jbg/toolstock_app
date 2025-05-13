@@ -88,6 +88,41 @@ export const orderService = {
     return response.data;
   },
 
+  downloadShipmentExcel: async (shipments, fileName) => {
+    // Utilizar una librería como XLSX para generar Excel en el lado del cliente
+    const XLSX = await import("xlsx");
+
+    // Filtrar campos que no deberían estar en el Excel
+    const filteredShipments = shipments.map((shipment) => {
+      // Clonar el objeto para no modificar el original
+      const filtered = { ...shipment };
+
+      // Eliminar campos que no deberían ir en el Excel
+      delete filtered.id;
+      delete filtered.idOrder;
+      delete filtered.exported;
+      delete filtered.engraved;
+      delete filtered.process;
+      delete filtered.fileGenerateName;
+      delete filtered.updateDateTime;
+
+      return filtered;
+    });
+
+    // Crear WorkSheet
+    const worksheet = XLSX.utils.json_to_sheet(filteredShipments);
+
+    // Crear WorkBook
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Envios");
+
+    // Descargar archivo
+    const cleanFileName = fileName.replace(/\.xlsx$/i, "");
+    XLSX.writeFile(workbook, `${cleanFileName}.xlsx`);
+
+    return true;
+  },
+
   // Método para obtener pedidos pendientes hasta hoy
   getPendingOrdersUntilToday: async (params = {}) => {
     const response = await api.get("/api/orders/pending/until-today", {
@@ -99,6 +134,52 @@ export const orderService = {
   // Método para obtener pedidos vencidos
   getDelayedOrders: async (params = {}) => {
     const response = await api.get("/api/orders/pending/delayed", { params });
+    return response.data;
+  },
+
+  markOrderForShipment: async (orderId, isMarked) => {
+    const response = await api.patch(`/orders/${orderId}/mark-for-shipment`, {
+      markForShipment: isMarked,
+    });
+    return response.data;
+  },
+
+  updateOrderStockStatus: async (orderId, isOutOfStock) => {
+    const response = await api.patch(`/orders/${orderId}/stock`, {
+      pendingWithoutStock: isOutOfStock,
+    });
+    return response.data;
+  },
+
+  getShipmentsHistory: async () => {
+    const response = await api.get("/orders/shipments/history");
+    return response.data;
+  },
+
+  getShipmentsByFileName: async (fileName) => {
+    const response = await api.get(`/orders/shipments/file/${fileName}`);
+    return response.data;
+  },
+
+  updateOrderToShipment: async (data) => {
+    const response = await api.patch(`/orders/shipment/${data.idOrder}`, {
+      columnName: data.columnName,
+      columnValue: data.columnValue,
+    });
+    return response.data;
+  },
+
+  processShipments: async () => {
+    const response = await api.post("/orders/shipments/process", {
+      shipmentType: "isFile",
+    });
+    return response.data;
+  },
+
+  syncAmazonOrders: async (days = 7) => {
+    const response = await api.post("/integrations/amazon/sync-orders", {
+      days,
+    });
     return response.data;
   },
 };
@@ -146,39 +227,10 @@ export const integrationService = {
     });
     return response.data;
   },
-  uploadAmazonReport: async (file) => {
-    const formData = new FormData();
-    formData.append("report", file);
-
-    const response = await api.post(
-      "/integrations/amazon/upload-report",
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
-
-    return response.data;
-  },
 
   // PrestaShop
   syncPrestashopOrders: async (days = 7) => {
     const response = await api.post("/integrations/prestashop/sync-orders", {
-      days,
-    });
-    return response.data;
-  },
-  syncFromAmazon: async (options = {}) => {
-    const response = await api.post(
-      "/integrations/prestashop/sync-from-amazon",
-      options
-    );
-    return response.data;
-  },
-  syncOrderStatuses: async (days = 7) => {
-    const response = await api.post("/integrations/prestashop/sync-statuses", {
       days,
     });
     return response.data;
@@ -189,26 +241,30 @@ export const integrationService = {
     const response = await api.post("/integrations/sync/full");
     return response.data;
   },
+};
 
-  // ERP
-  exportOrdersForERP: async (options = {}) => {
-    const response = await api.post("/integrations/erp/export-orders", options);
+export const catalogService = {
+  getProducts: async (filters = {}) => {
+    const response = await api.get("/catalog", { params: filters });
     return response.data;
   },
-  importOrderUpdates: async (file) => {
-    const formData = new FormData();
-    formData.append("file", file);
+  getProductById: async (id) => {
+    const response = await api.get(`/catalog/${id}`);
+    return response.data;
+  },
+};
 
-    const response = await api.post(
-      "/integrations/erp/import-updates",
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
-
+export const messageService = {
+  getMessages: async (filters = {}) => {
+    const response = await api.get("/messages", { params: filters });
+    return response.data;
+  },
+  getMessageById: async (id) => {
+    const response = await api.get(`/messages/${id}`);
+    return response.data;
+  },
+  replyToMessage: async (id, messageData) => {
+    const response = await api.post(`/messages/${id}/reply`, messageData);
     return response.data;
   },
 };
