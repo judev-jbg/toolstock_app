@@ -12,6 +12,7 @@ import {
   FaCog,
 } from "react-icons/fa";
 import { useAuth } from "../../contexts/AuthContext";
+import Logo from "../common/Logo";
 import "./MainLayout.css";
 
 const MainLayout = ({ children }) => {
@@ -41,7 +42,7 @@ const MainLayout = ({ children }) => {
       {/* Sidebar */}
       <aside className={`sidebar ${isSidebarOpen ? "open" : "closed"}`}>
         <div className="sidebar-header">
-          <img src="/img/tom-dark.png" alt="Toolstock Logo" className="logo" />
+          <Logo />
           <button className="toggle-button" onClick={toggleSidebar}>
             {isSidebarOpen ? <FaTimes /> : <FaBars />}
           </button>

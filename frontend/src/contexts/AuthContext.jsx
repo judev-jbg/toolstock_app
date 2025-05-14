@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect } from "react";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
-import api from "../services/api";
+import { authService } from "../services/api";
 
 export const AuthContext = createContext();
 
@@ -62,16 +62,18 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      const response = await api.post("/auth/login", { email, password });
+      const response = await authService.login(email, password);
 
-      const { token: newToken, ...userData } = response.data;
+      if (response && response.token) {
+        // Guardar token en localStorage
+        localStorage.setItem("token", response.token);
+        setToken(response.token);
+        setUser(response);
 
-      // Guardar token en localStorage
-      localStorage.setItem("token", newToken);
-      setToken(newToken);
-      setUser(userData);
-
-      return true;
+        return true;
+      } else {
+        setError("Credenciales inválidas");
+      }
     } catch (error) {
       console.error("Error de inicio de sesión:", error);
       setError(error.response?.data?.message || "Error de inicio de sesión");

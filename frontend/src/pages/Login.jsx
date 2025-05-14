@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaUser, FaLock } from "react-icons/fa";
 import { useAuth } from "../contexts/AuthContext";
@@ -8,12 +8,25 @@ import "./Login.css";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, error, setError } = useAuth();
+  const { login, error, setError, user } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
   const [loading, setLoading] = useState(false);
+  const [localError, setLocalError] = useState(null);
+
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (error) {
+      setLocalError(error);
+    }
+  }, [error]);
 
   // Manejar cambios en el formulario
   const handleChange = (e) => {
@@ -24,6 +37,7 @@ const Login = () => {
     }));
 
     // Limpiar error al modificar el formulario
+    setLocalError(null);
     if (error) {
       setError(null);
     }
@@ -35,7 +49,7 @@ const Login = () => {
 
     // Validación básica
     if (!formData.email || !formData.password) {
-      setError("Por favor completa todos los campos");
+      setLocalError("Por favor completa todos los campos");
       return;
     }
 
@@ -49,6 +63,8 @@ const Login = () => {
       }
     } catch (error) {
       console.error("Error de inicio de sesión:", error);
+      // setError(error.response?.data?.message || "Error al iniciar sesión");
+      setLocalError(error.response?.data?.message || "Error al iniciar sesión");
     } finally {
       setLoading(false);
     }
@@ -68,7 +84,7 @@ const Login = () => {
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>
-          {error && <div className="login-error">{error}</div>}
+          {localError && <div className="login-error">{localError}</div>}
 
           <Input
             label="Correo electrónico"
