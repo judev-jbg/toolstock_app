@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect } from "react";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
+import api from "../services/api";
 
 export const AuthContext = createContext();
 
@@ -61,7 +62,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      const response = await axios.post("/api/auth/login", { email, password });
+      const response = await api.post("/auth/login", { email, password });
 
       const { token: newToken, ...userData } = response.data;
 

@@ -1,8 +1,9 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const path = require('path'); // Añade esta línea
+const path = require('path');
 const fs = require('fs');
 const { connectDB } = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
@@ -13,7 +14,6 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Cargar variables de entorno
-require('dotenv').config();
 
 // Inicializar Express
 const app = express();
@@ -38,8 +38,8 @@ connectDB();
 // Rutas
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
-app.use('/api/catalog', require('./routes/catalogRoutes'));
-app.use('/api/messages', require('./routes/messageRoutes'));
+// app.use('/api/catalog', require('./routes/catalogRoutes'));
+// app.use('/api/messages', require('./routes/messageRoutes'));
 app.use('/api/integrations/amazon', require('./routes/amazonIntegrationRoutes'));
 app.use('/api/integrations/prestashop', require('./routes/prestashopIntegrationRoutes'));
 app.use('/api/integrations/sync', require('./routes/syncIntegrationRoutes'));

@@ -22,6 +22,7 @@ const {
   updateShipment,
   deleteShipment,
   processShipments,
+  getOrderCounts,
 } = require('../controllers/orderController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -68,13 +69,13 @@ router.post('/shipments/process', processShipments);
 
 router.get('/counts', getOrderCounts);
 
-router.post('/export-for-gls', protect, exportOrdersForGLS);
+// router.post('/export-for-gls', protect, exportOrdersForGLS);
 
-router.post(
-  '/orders/:id/mark-for-shipment',
-  [check('markForShipment').isBoolean().withMessage('markForShipment must be a boolean')],
-  checkValidationResult,
-  markOrderForShipment
-);
+// router.post(
+//   '/orders/:id/mark-for-shipment',
+//   [check('markForShipment').isBoolean().withMessage('markForShipment must be a boolean')],
+//   checkValidationResult,
+//   markOrderForShipment
+// );
 
 module.exports = router;

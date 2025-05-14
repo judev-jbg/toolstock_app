@@ -1,10 +1,7 @@
 const mongoose = require('mongoose');
 
 // Opciones de conexión
-const connectOptions = {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-};
+const connectOptions = {};
 
 /**
  * Conecta a MongoDB
@@ -12,7 +9,7 @@ const connectOptions = {
  */
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI, connectOptions);
+    const conn = await mongoose.connect(process.env.MONGO_URI);
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     console.error(`Error connecting to MongoDB: ${error.message}`);

@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
+const bcrypt = require('bcryptjs');
 const User = require('../models/userModel');
 
 /**
@@ -76,6 +77,15 @@ const loginUser = async (req, res) => {
 
     // Buscar usuario por email
     const user = await User.findOne({ email }).select('+password');
+
+    console.log('Password hash en BD:', user.password);
+    console.log('Password ingresado:', password);
+
+    const pass = await bcrypt.hash(password, 10);
+    console.log('Password hash ingresado:', pass);
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    console.log('¿Contraseña correcta?:', isMatch);
 
     // Verificar usuario y contraseña
     if (!user || !(await user.matchPassword(password))) {

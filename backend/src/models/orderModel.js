@@ -211,8 +211,6 @@ const orderSchema = new mongoose.Schema(
 );
 
 // Índices para búsqueda eficiente
-orderSchema.index({ amazonOrderId: 1 });
-orderSchema.index({ prestashopOrderId: 1 });
 orderSchema.index({ purchaseDate: -1 });
 orderSchema.index({ orderStatus: 1 });
 orderSchema.index({ buyerEmail: 1 });

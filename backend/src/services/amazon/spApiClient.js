@@ -1,4 +1,4 @@
-const SellingPartnerAPI = require('amazon-sp-api');
+const SellingPartner = require('amazon-sp-api'); // La importación correcta
 
 /**
  * Cliente para conexión con Amazon SP-API
@@ -14,29 +14,28 @@ class SpApiClient {
    */
   initClient() {
     try {
-      // Verificar si SellingPartnerAPI existe antes de usarlo
-      if (!SellingPartnerAPI || typeof SellingPartnerAPI.createFromEnv !== 'function') {
-        console.error('SellingPartnerAPI no está disponible o no tiene el método createFromEnv');
-        // Proporcionar un cliente mock para evitar que la aplicación falle completamente
-        this.clientPromise = Promise.resolve({
-          callAPI: async () => ({ Orders: [] }),
-        });
-        return;
-      }
-      this.clientPromise = SellingPartnerAPI.createFromEnv();
+      // Crear una nueva instancia del cliente según la documentación
+      this.clientPromise = Promise.resolve(
+        new SellingPartner({
+          region: process.env.AMAZON_REGION || 'eu', // La región para los endpoints de SP-API
+          refresh_token: process.env.AMAZON_REFRESH_TOKEN, // El refresh token del usuario de tu app
+          // Opcional: credenciales directamente si no están en env vars
+          credentials: {
+            SELLING_PARTNER_APP_CLIENT_ID: process.env.SELLING_PARTNER_APP_CLIENT_ID,
+            SELLING_PARTNER_APP_CLIENT_SECRET: process.env.SELLING_PARTNER_APP_CLIENT_SECRET,
+          },
+        })
+      );
       console.log('Amazon SP-API client initialized');
     } catch (error) {
       console.error('Error initializing Amazon SP-API client:', error);
-      // Proporcionar un cliente mock
-      this.clientPromise = Promise.resolve({
-        callAPI: async () => ({ Orders: [] }),
-      });
+      throw error;
     }
   }
 
   /**
    * Obtiene el cliente inicializado
-   * @returns {Promise<SellingPartnerAPI>} Cliente inicializado
+   * @returns {Promise<SellingPartner>} Cliente inicializado
    */
   async getClient() {
     return this.clientPromise;

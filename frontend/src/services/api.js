@@ -84,7 +84,7 @@ export const orderService = {
   },
 
   getOrderCounts: async () => {
-    const response = await api.get("/api/orders/counts");
+    const response = await api.get("/orders/counts");
     return response.data;
   },
 
