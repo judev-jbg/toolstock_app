@@ -1,16 +1,22 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  FaBars,
-  FaTimes,
-  FaHome,
-  FaBoxOpen,
-  FaList,
-  FaComment,
-  FaSignOutAlt,
-  FaUser,
-  FaCog,
-} from "react-icons/fa";
+  MdOutlineDashboard,
+  MdDashboard,
+  MdOutlineShoppingBasket,
+  MdShoppingBasket,
+  MdInventory2,
+  MdOutlineInventory2,
+  MdMessage,
+  MdOutlineMessage,
+  MdManageAccounts,
+  MdOutlineManageAccounts,
+  MdSettingsSuggest,
+  MdOutlineSettingsSuggest,
+  MdOutlineLogout,
+  MdMenu,
+} from "react-icons/md";
+import { TbMenu3 } from "react-icons/tb";
 import { useAuth } from "../../contexts/AuthContext";
 import Logo from "../common/Logo";
 import "./MainLayout.css";
@@ -44,7 +50,7 @@ const MainLayout = ({ children }) => {
         <div className="sidebar-header">
           <Logo />
           <button className="toggle-button" onClick={toggleSidebar}>
-            {isSidebarOpen ? <FaTimes /> : <FaBars />}
+            {isSidebarOpen ? <TbMenu3 /> : <MdMenu />}
           </button>
         </div>
 
@@ -55,7 +61,12 @@ const MainLayout = ({ children }) => {
                 to="/"
                 className={`sidebar-link ${isActive("/") ? "active" : ""}`}
               >
-                <FaHome className="sidebar-icon" />
+                {isActive("/") ? (
+                  <MdDashboard className="sidebar-icon" />
+                ) : (
+                  <MdOutlineDashboard className="sidebar-icon" />
+                )}
+
                 <span className="sidebar-text">Dashboard</span>
               </Link>
             </li>
@@ -66,7 +77,12 @@ const MainLayout = ({ children }) => {
                   isActive("/orders") ? "active" : ""
                 }`}
               >
-                <FaBoxOpen className="sidebar-icon" />
+                {isActive("/orders") ? (
+                  <MdShoppingBasket className="sidebar-icon" />
+                ) : (
+                  <MdOutlineShoppingBasket className="sidebar-icon" />
+                )}
+
                 <span className="sidebar-text">Pedidos</span>
               </Link>
             </li>
@@ -77,7 +93,12 @@ const MainLayout = ({ children }) => {
                   isActive("/catalog") ? "active" : ""
                 }`}
               >
-                <FaList className="sidebar-icon" />
+                {isActive("/catalog") ? (
+                  <MdInventory2 className="sidebar-icon" />
+                ) : (
+                  <MdOutlineInventory2 className="sidebar-icon" />
+                )}
+
                 <span className="sidebar-text">Catálogo</span>
               </Link>
             </li>
@@ -88,7 +109,12 @@ const MainLayout = ({ children }) => {
                   isActive("/messages") ? "active" : ""
                 }`}
               >
-                <FaComment className="sidebar-icon" />
+                {isActive("/messages") ? (
+                  <MdMessage className="sidebar-icon" />
+                ) : (
+                  <MdOutlineMessage className="sidebar-icon" />
+                )}
+
                 <span className="sidebar-text">Mensajes</span>
               </Link>
             </li>
@@ -104,7 +130,12 @@ const MainLayout = ({ children }) => {
                   isActive("/profile") ? "active" : ""
                 }`}
               >
-                <FaUser className="sidebar-icon" />
+                {isActive("/profile") ? (
+                  <MdManageAccounts className="sidebar-icon" />
+                ) : (
+                  <MdOutlineManageAccounts className="sidebar-icon" />
+                )}
+
                 <span className="sidebar-text">Perfil</span>
               </Link>
             </li>
@@ -116,7 +147,12 @@ const MainLayout = ({ children }) => {
                     isActive("/settings") ? "active" : ""
                   }`}
                 >
-                  <FaCog className="sidebar-icon" />
+                  {isActive("/settings") ? (
+                    <MdSettingsSuggest className="sidebar-icon" />
+                  ) : (
+                    <MdOutlineSettingsSuggest className="sidebar-icon" />
+                  )}
+
                   <span className="sidebar-text">Configuración</span>
                 </Link>
               </li>
@@ -126,7 +162,7 @@ const MainLayout = ({ children }) => {
                 className="sidebar-link logout-button"
                 onClick={handleLogout}
               >
-                <FaSignOutAlt className="sidebar-icon" />
+                <MdOutlineLogout className="sidebar-icon" />
                 <span className="sidebar-text">Cerrar Sesión</span>
               </button>
             </li>

@@ -54,6 +54,10 @@ export const authService = {
     const response = await api.put("/auth/profile", userData);
     return response.data;
   },
+  updateAvatar: async (userAvatar) => {
+    const response = await api.post("/auth/upload-avatar", userAvatar);
+    return response.data;
+  },
 };
 
 // Servicio para pedidos
@@ -70,10 +74,10 @@ export const orderService = {
     const response = await api.patch(`/orders/${id}`, statusData);
     return response.data;
   },
-  getPendingOrders: async (params = {}) => {
-    const response = await api.get("/orders/pending", { params });
-    return response.data;
-  },
+  // getPendingOrders: async (params = {}) => {
+  //   const response = await api.get("/orders/pending", { params });
+  //   return response.data;
+  // },
   getOutOfStockOrders: async (params = {}) => {
     const response = await api.get("/orders/outofstock", { params });
     return response.data;

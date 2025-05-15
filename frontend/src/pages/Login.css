@@ -3,14 +3,14 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background-color: var(--background-light);
+  background-color: var(--secondary-color);
   padding: 1rem;
 }
 
 .login-card {
   width: 100%;
   max-width: 450px;
-  background-color: white;
+  background-color: var(--background-card);
   border-radius: 8px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   padding: 2rem;
@@ -38,11 +38,9 @@
   font-size: 1.75rem;
   margin-bottom: 0.5rem;
   margin-top: 1rem;
-  color: var(--text-dark);
 }
 
 .login-header p {
-  color: #666;
   font-size: 0.875rem;
 }
 

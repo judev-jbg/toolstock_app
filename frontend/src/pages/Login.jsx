@@ -1,3 +1,4 @@
+// Modificación a frontend/src/pages/Login.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaUser, FaLock } from "react-icons/fa";
@@ -14,19 +15,13 @@ const Login = () => {
     password: "",
   });
   const [loading, setLoading] = useState(false);
-  const [localError, setLocalError] = useState(null);
 
+  // Redirigir si ya está autenticado
   useEffect(() => {
     if (user) {
       navigate("/");
     }
   }, [user, navigate]);
-
-  useEffect(() => {
-    if (error) {
-      setLocalError(error);
-    }
-  }, [error]);
 
   // Manejar cambios en el formulario
   const handleChange = (e) => {
@@ -37,7 +32,6 @@ const Login = () => {
     }));
 
     // Limpiar error al modificar el formulario
-    setLocalError(null);
     if (error) {
       setError(null);
     }
@@ -49,7 +43,7 @@ const Login = () => {
 
     // Validación básica
     if (!formData.email || !formData.password) {
-      setLocalError("Por favor completa todos los campos");
+      setError("Por favor completa todos los campos");
       return;
     }
 
@@ -63,8 +57,7 @@ const Login = () => {
       }
     } catch (error) {
       console.error("Error de inicio de sesión:", error);
-      // setError(error.response?.data?.message || "Error al iniciar sesión");
-      setLocalError(error.response?.data?.message || "Error al iniciar sesión");
+      setError(error.response?.data?.message || "Error al iniciar sesión");
     } finally {
       setLoading(false);
     }
@@ -75,16 +68,16 @@ const Login = () => {
       <div className="login-card">
         <div className="login-header">
           <img
-            src="/public/img/logo.png"
+            src="/img/logo.png"
             alt="Toolstock Logo"
             className="login-logo"
           />
-          <h1>Iniciar Sesión</h1>
+          <h1>Iniciar sesión</h1>
           <p>Accede a tu cuenta de Toolstock Manager</p>
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>
-          {localError && <div className="login-error">{localError}</div>}
+          {error && <div className="login-error">{error}</div>}
 
           <Input
             label="Correo electrónico"
@@ -119,7 +112,7 @@ const Login = () => {
             fullWidth
             disabled={loading}
           >
-            {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
+            {loading ? "Iniciando sesión..." : "Iniciar sesión"}
           </Button>
         </form>
       </div>

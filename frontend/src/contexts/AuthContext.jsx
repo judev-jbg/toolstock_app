@@ -6,7 +6,7 @@ import { authService } from "../services/api";
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState({});
   const [token, setToken] = useState(localStorage.getItem("token") || null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -39,8 +39,8 @@ export const AuthProvider = ({ children }) => {
           setError("Sesión expirada. Por favor, inicia sesión nuevamente.");
         } else {
           // Token válido, obtener perfil de usuario
-          const response = await axios.get("/api/auth/profile");
-          setUser(response.data);
+          const response = await authService.getProfile();
+          setUser(response);
         }
       } catch (error) {
         console.error("Error verificando token:", error);
@@ -69,6 +69,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem("token", response.token);
         setToken(response.token);
         setUser(response);
+        console.log(user);
 
         return true;
       } else {
@@ -95,7 +96,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
 
-      const response = await axios.put("/api/auth/profile", userData);
+      const response = await authService.updateProfile(userData);
 
       setUser(response.data);
 

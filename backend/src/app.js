@@ -36,6 +36,8 @@ exportDirs.forEach((dir) => {
 connectDB();
 
 // Rutas
+app.use('/uploads/avatars', express.static(path.join(__dirname, '../uploads/avatars')));
+
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
 // app.use('/api/catalog', require('./routes/catalogRoutes'));

@@ -92,7 +92,7 @@ const Orders = () => {
 
   // Cargar todos los datos y contadores
   useEffect(() => {
-    fetchAllOrders();
+    // fetchAllOrders();
   }, []);
 
   // Actualizar switchStates cuando cambian las órdenes

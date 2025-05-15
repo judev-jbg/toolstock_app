@@ -5,13 +5,12 @@
 
 /* Sidebar */
 .sidebar {
-  width: 250px;
-  background-color: var(--secondary-color);
+  width: var(--width-sidebar);
+  background-color: var(--background-dark);
   color: var(--text-light);
   display: flex;
   flex-direction: column;
   transition: var(--transition);
-  overflow-x: hidden;
   position: fixed;
   height: 100vh;
   z-index: 100;
@@ -22,6 +21,7 @@
 }
 
 .sidebar-header {
+  position: relative;
   padding: 1rem;
   display: flex;
   align-items: center;
@@ -40,15 +40,21 @@
 }
 
 .toggle-button {
+  position: absolute;
+  right: 5%;
   background: none;
   border: none;
   color: var(--text-light);
   cursor: pointer;
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: var(--transition);
+}
+
+.sidebar.closed .toggle-button {
+  right: -45%;
 }
 
 .toggle-button:hover {
@@ -94,6 +100,15 @@
   margin-right: 0.75rem;
 }
 
+.sidebar.closed .sidebar-icon {
+  font-size: 1.45rem;
+  margin-right: 0;
+}
+
+.sidebar.closed .sidebar-link {
+  justify-content: center;
+}
+
 .sidebar.closed .sidebar-text {
   display: none;
 }
@@ -116,10 +131,10 @@
 /* Contenido principal */
 .main-content {
   flex: 1;
-  margin-left: 250px;
+  margin-left: var(--width-sidebar);
   padding: 1.5rem;
   transition: var(--transition);
-  background-color: var(--background-light);
+  background-color: var(--secondary-color);
   min-height: 100vh;
 }
 
