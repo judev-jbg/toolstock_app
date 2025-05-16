@@ -6,7 +6,7 @@ import { authService } from "../services/api";
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState({});
+  const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem("token") || null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -39,8 +39,13 @@ export const AuthProvider = ({ children }) => {
           setError("Sesión expirada. Por favor, inicia sesión nuevamente.");
         } else {
           // Token válido, obtener perfil de usuario
-          const response = await authService.getProfile();
-          setUser(response);
+          try {
+            const response = await authService.getProfile();
+            setUser(response);
+          } catch (profileError) {
+            console.error("Error al obtener perfil:", profileError);
+            logout();
+          }
         }
       } catch (error) {
         console.error("Error verificando token:", error);
@@ -52,7 +57,6 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
       }
     };
-
     verifyToken();
   }, [token]);
 
@@ -61,23 +65,35 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem("token");
 
       const response = await authService.login(email, password);
+
+      console.log(response);
 
       if (response && response.token) {
         // Guardar token en localStorage
         localStorage.setItem("token", response.token);
         setToken(response.token);
         setUser(response);
-        console.log(user);
+
+        axios.defaults.headers.common[
+          "Authorization"
+        ] = `Bearer ${response.token}`;
 
         return true;
       } else {
         setError("Credenciales inválidas");
+        return false;
       }
     } catch (error) {
       console.error("Error de inicio de sesión:", error);
       setError(error.response?.data?.message || "Error de inicio de sesión");
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem("token");
       return false;
     } finally {
       setLoading(false);
@@ -86,9 +102,23 @@ export const AuthProvider = ({ children }) => {
 
   // Cerrar sesión
   const logout = () => {
-    localStorage.removeItem("token");
-    setToken(null);
-    setUser(null);
+    try {
+      // Opcional: notificar al backend sobre el logout
+      // await authService.logout();
+
+      // Limpiar estado local
+      localStorage.removeItem("token");
+      setToken(null);
+      setUser(null);
+
+      // Limpiar headers de axios
+      delete axios.defaults.headers.common["Authorization"];
+
+      return true;
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+      return false;
+    }
   };
 
   // Actualizar perfil

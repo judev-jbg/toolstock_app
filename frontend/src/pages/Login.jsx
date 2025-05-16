@@ -77,8 +77,6 @@ const Login = () => {
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>
-          {error && <div className="login-error">{error}</div>}
-
           <Input
             label="Correo electrónico"
             type="email"
@@ -104,7 +102,7 @@ const Login = () => {
             icon={<FaLock />}
             fullWidth
           />
-
+          {error && <div className="login-error">{error}</div>}
           <Button
             type="submit"
             variant="primary"

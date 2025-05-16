@@ -78,7 +78,7 @@ const loginUser = async (req, res) => {
     // Buscar usuario por email
     const user = await User.findOne({ email }).select('+password');
 
-    // Verificar usuario y contraseña
+    // Verificar usuario
     if (!user) {
       return res.status(401).json({ message: 'El usuario no esta registrado' });
     }

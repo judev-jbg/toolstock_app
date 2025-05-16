@@ -30,7 +30,10 @@ api.interceptors.response.use(
     // Manejar errores de autenticación (token inválido o expirado)
     if (error.response && error.response.status === 401) {
       localStorage.removeItem("token");
-      window.location.href = "/login";
+      const currentPath = window.location.pathname;
+      if (currentPath !== "/login") {
+        window.location.href = "/login";
+      }
     }
     return Promise.reject(error);
   }
@@ -40,6 +43,7 @@ api.interceptors.response.use(
 export const authService = {
   login: async (email, password) => {
     const response = await api.post("/auth/login", { email, password });
+
     return response.data;
   },
   register: async (userData) => {

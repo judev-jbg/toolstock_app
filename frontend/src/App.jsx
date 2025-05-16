@@ -20,14 +20,14 @@ import NotFound from "./pages/NotFound";
 
 // Componente para rutas protegidas
 const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, token } = useAuth();
 
   // Mostrar algo mientras se verifica la autenticación
   if (loading) {
     return <div className="loading">Cargando...</div>;
   }
 
-  if (!user) {
+  if (!user || !token) {
     return <Navigate to="/login" />;
   }
 
