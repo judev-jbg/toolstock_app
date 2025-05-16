@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import "./Input.css";
 
 const Input = ({
@@ -16,27 +16,78 @@ const Input = ({
   className = "",
   ...props
 }) => {
-  const inputClasses = `input-container ${error ? "error" : ""} ${
+  const [isFocused, setIsFocused] = useState(false);
+  const inputClasses = `md-input-container ${error ? "error" : ""} ${
     fullWidth ? "full-width" : ""
   } ${className}`;
 
+  const hasValue = value !== undefined && value !== "";
+  const showLabel = isFocused || hasValue || placeholder;
+
+  const handleFocus = () => setIsFocused(true);
+  const handleBlur = () => setIsFocused(false);
+
   return (
     <div className={inputClasses}>
-      {label && <label htmlFor={id}>{label}</label>}
-      <div className="input-wrapper">
-        {icon && <span className="input-icon">{icon}</span>}
-        <input
-          type={type}
-          id={id}
-          name={name}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          required={required}
-          {...props}
-        />
+      <div
+        className={`md-input-outline ${isFocused ? "focused" : ""} ${
+          hasValue ? "has-value" : ""
+        }`}
+      >
+        {icon && <span className="md-input-icon">{icon}</span>}
+
+        {type === "textarea" ? (
+          <textarea
+            id={id}
+            name={name}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            required={required}
+            className="md-input md-textarea"
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            {...props}
+          />
+        ) : (
+          <input
+            type={type}
+            id={id}
+            name={name}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            required={required}
+            className="md-input"
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            {...props}
+          />
+        )}
+
+        {label && (
+          <label
+            htmlFor={id}
+            className={`md-input-label ${showLabel ? "active" : ""} ${
+              icon ? "with-ico" : ""
+            }`}
+          >
+            {label}
+          </label>
+        )}
+
+        <fieldset className={`md-input-fieldset ${icon ? "with-ico" : ""}`}>
+          <legend
+            className={`md-input-legend ${showLabel ? "active" : ""} ${
+              icon ? "with-ico" : ""
+            }`}
+          >
+            {label ? <span>{label}</span> : <span>&nbsp;</span>}
+          </legend>
+        </fieldset>
       </div>
-      {error && <span className="input-error">{error}</span>}
+
+      {error && <span className="md-input-error">{error}</span>}
     </div>
   );
 };

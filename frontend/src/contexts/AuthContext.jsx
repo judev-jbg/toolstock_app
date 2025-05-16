@@ -128,12 +128,12 @@ export const AuthProvider = ({ children }) => {
 
       const response = await authService.updateProfile(userData);
 
-      setUser(response.data);
+      setUser(response);
 
       // Si se actualizó el token, guardarlo
-      if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
-        setToken(response.data.token);
+      if (response.token) {
+        localStorage.setItem("token", response.token);
+        setToken(response.token);
       }
 
       return { success: true };

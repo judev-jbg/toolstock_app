@@ -59,7 +59,11 @@ export const authService = {
     return response.data;
   },
   updateAvatar: async (userAvatar) => {
-    const response = await api.post("/auth/upload-avatar", userAvatar);
+    const response = await api.post("/auth/upload-avatar", userAvatar, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     return response.data;
   },
 };

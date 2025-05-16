@@ -1,4 +1,5 @@
 import React from "react";
+import "./ToastNotifier.css";
 
 const ToastNotifier = ({ message, type }) => {
   return (

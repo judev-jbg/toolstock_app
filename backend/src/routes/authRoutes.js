@@ -1,5 +1,9 @@
 const express = require('express');
 const { check } = require('express-validator');
+const fs = require('fs');
+const path = require('path');
+const User = require('../models/userModel');
+const uploadDir = path.join(__dirname, '../../uploads/avatars');
 const {
   registerUser,
   loginUser,

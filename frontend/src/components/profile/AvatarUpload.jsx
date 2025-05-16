@@ -1,11 +1,12 @@
 // Archivo nuevo: frontend/src/components/profile/AvatarUpload.jsx
 
 import React, { useState, useRef } from "react";
-import { FaCamera, FaUser } from "react-icons/fa";
+import { MdPhotoCamera, MdAccountCircle } from "react-icons/md";
 import Button from "../common/Button";
 
 const AvatarUpload = ({ currentAvatar, onAvatarChange, loading }) => {
   const [preview, setPreview] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
 
   // Manejar cambio de archivo
@@ -42,6 +43,17 @@ const AvatarUpload = ({ currentAvatar, onAvatarChange, loading }) => {
     fileInputRef.current.click();
   };
 
+  const handleConfirm = () => {
+    if (selectedFile) {
+      onAvatarChange(selectedFile);
+    }
+  };
+
+  const handleCancel = () => {
+    setPreview(null);
+    setSelectedFile(null);
+  };
+
   // Generar URL de avatar actual
   const avatarUrl = currentAvatar
     ? `${import.meta.env.VITE_API_URL.replace(
@@ -61,7 +73,7 @@ const AvatarUpload = ({ currentAvatar, onAvatarChange, loading }) => {
           />
         ) : (
           <div className="avatar-placeholder">
-            <FaUser size={64} />
+            <MdAccountCircle size={150} />
           </div>
         )}
 
@@ -71,7 +83,7 @@ const AvatarUpload = ({ currentAvatar, onAvatarChange, loading }) => {
           onClick={handleButtonClick}
           disabled={loading}
         >
-          <FaCamera />
+          <MdPhotoCamera />
         </button>
       </div>
 
@@ -87,10 +99,19 @@ const AvatarUpload = ({ currentAvatar, onAvatarChange, loading }) => {
         <div className="avatar-actions">
           <Button
             variant="outline"
-            onClick={() => setPreview(null)}
+            onClick={handleCancel}
             disabled={loading}
+            size="small"
           >
             Cancelar
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleConfirm}
+            disabled={loading}
+            size="small"
+          >
+            Confirmar
           </Button>
         </div>
       )}

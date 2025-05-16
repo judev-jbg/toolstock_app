@@ -142,31 +142,46 @@ const getUserProfile = async (req, res) => {
  */
 const updateUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id).select('+password');
 
-    if (user) {
-      user.name = req.body.name || user.name;
-      user.email = req.body.email || user.email;
-      user.avatar = req.body.avatar || user.avatar;
-
-      // Si viene contraseña, actualizarla
-      if (req.body.password) {
-        user.password = req.body.password;
-      }
-
-      const updatedUser = await user.save();
-
-      res.json({
-        _id: updatedUser._id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        role: updatedUser.role,
-        avatar: updatedUser.avatar,
-        token: generateToken(updatedUser._id),
-      });
-    } else {
-      res.status(404).json({ message: 'Usuario no encontrado' });
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
     }
+
+    // Si se intenta cambiar la contraseña, verificar la contraseña actual
+    if (req.body.password && req.body.currentPassword) {
+      const isMatch = await user.matchPassword(req.body.currentPassword);
+      if (!isMatch) {
+        return res.status(401).json({ message: 'Contraseña actual incorrecta' });
+      }
+    }
+
+    // Actualizar campos básicos
+    user.name = req.body.name || user.name;
+
+    // No permitir cambiar el email para evitar problemas de autenticación
+    // user.email = req.body.email || user.email;
+
+    // Actualizar avatar si viene en la petición
+    if (req.body.avatar) {
+      user.avatar = req.body.avatar;
+    }
+
+    // Actualizar contraseña si viene en la petición
+    if (req.body.password) {
+      user.password = req.body.password;
+    }
+
+    const updatedUser = await user.save();
+
+    res.json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      role: updatedUser.role,
+      avatar: updatedUser.avatar,
+      token: generateToken(updatedUser._id),
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error en el servidor' });

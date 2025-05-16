@@ -83,6 +83,16 @@
   background-color: var(--primary-color-hover);
 }
 
+.avatar-edit-button svg {
+  width: 1rem;
+  height: 1rem;
+  transform: scale(1.4);
+  -webkit-transform: scale(1.4);
+  -moz-transform: scale(1.4);
+  -ms-transform: scale(1.4);
+  -o-transform: scale(1.4);
+}
+
 .avatar-actions {
   margin-top: 1rem;
   display: flex;
