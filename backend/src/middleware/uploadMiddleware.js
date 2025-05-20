@@ -1,4 +1,3 @@
-// Archivo nuevo: backend/src/middleware/uploadMiddleware.js
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');

@@ -46,10 +46,6 @@ export const authService = {
 
     return response.data;
   },
-  register: async (userData) => {
-    const response = await api.post("/auth/register", userData);
-    return response.data;
-  },
   getProfile: async () => {
     const response = await api.get("/auth/profile");
     return response.data;
@@ -64,6 +60,47 @@ export const authService = {
         "Content-Type": "multipart/form-data",
       },
     });
+    return response.data;
+  },
+
+  getUsers: async (filters = {}) => {
+    const response = await api.get("/auth/users", { params: filters });
+    return response.data;
+  },
+
+  // Obtener usuario por ID
+  getUserById: async (id) => {
+    const response = await api.get(`/auth/users/${id}`);
+    return response.data;
+  },
+
+  // Crear un nuevo usuario
+  createUser: async (userData) => {
+    const response = await api.post("/auth/register", userData);
+    return response.data;
+  },
+
+  // Actualizar usuario
+  updateUser: async (id, userData) => {
+    const response = await api.put(`/auth/users/${id}`, userData);
+    return response.data;
+  },
+
+  // Activar/Desactivar usuario
+  toggleUserStatus: async (id) => {
+    const response = await api.patch(`/auth/users/${id}/toggle-status`);
+    return response.data;
+  },
+
+  // Resetear contraseña (solo root)
+  resetUserPassword: async (id) => {
+    const response = await api.post(`/auth/users/${id}/reset-password`);
+    return response.data;
+  },
+
+  // Eliminar usuario
+  deleteUser: async (id) => {
+    const response = await api.delete(`/auth/users/${id}`);
     return response.data;
   },
 };

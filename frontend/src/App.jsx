@@ -17,6 +17,7 @@ import Messages from "./pages/Messages";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import ResetPassword from "./pages/ResetPassword";
 
 // Componente para rutas protegidas
 const ProtectedRoute = ({ children }) => {
@@ -142,6 +143,8 @@ const AppRoutes = () => {
           </AdminRoute>
         }
       />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
+      <Route path="/activate-account/:token" element={<ResetPassword />} />
 
       {/* Ruta para 404 */}
       <Route path="*" element={<NotFound />} />

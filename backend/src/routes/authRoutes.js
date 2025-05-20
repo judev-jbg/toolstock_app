@@ -11,6 +11,12 @@ const {
   updateUserProfile,
   getUsers,
   deleteUser,
+  getUserById,
+  updateUser,
+  toggleUserStatus,
+  generateResetToken,
+  resetPassword,
+  verifyResetToken,
 } = require('../controllers/authController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { upload } = require('../middleware/uploadMiddleware');
@@ -25,6 +31,8 @@ router.post(
   ],
   loginUser
 );
+
+router.route('/reset-password/:token').post(resetPassword);
 
 router.post('/upload-avatar', protect, upload.single('avatar'), async (req, res) => {
   try {
@@ -60,7 +68,19 @@ router.route('/profile').get(protect, getUserProfile).put(protect, updateUserPro
 // Rutas de administración (requieren rol admin o root)
 router.route('/users').get(protect, authorize('admin', 'root'), getUsers);
 
-router.route('/users/:id').delete(protect, authorize('admin', 'root'), deleteUser);
+router
+  .route('/users/:id')
+  .get(protect, authorize('admin', 'root'), getUserById)
+  .put(protect, authorize('admin', 'root'), updateUser)
+  .delete(protect, authorize('admin', 'root'), deleteUser);
+
+router
+  .route('/users/:id/toggle-status')
+  .patch(protect, authorize('admin', 'root'), toggleUserStatus);
+
+router.route('/users/:id/reset-password').post(protect, authorize('root'), generateResetToken);
+
+router.route('/verify-token/:token').get(verifyResetToken);
 
 router.post(
   '/register',
@@ -69,7 +89,6 @@ router.post(
     authorize('admin', 'root'),
     check('name', 'El nombre es obligatorio').not().isEmpty(),
     check('email', 'Por favor incluya un email válido').isEmail(),
-    check('password', 'La contraseña debe tener 6 o más caracteres').isLength({ min: 6 }),
   ],
   registerUser
 );
