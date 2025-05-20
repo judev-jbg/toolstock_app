@@ -84,7 +84,6 @@ const Login = () => {
             name="email"
             value={formData.email}
             onChange={handleChange}
-            placeholder="Introduce tu correo electrónico"
             required
             icon={<FaUser />}
             fullWidth
@@ -97,19 +96,12 @@ const Login = () => {
             name="password"
             value={formData.password}
             onChange={handleChange}
-            placeholder="Introduce tu contraseña"
             required
             icon={<FaLock />}
             fullWidth
           />
           {error && <div className="login-error">{error}</div>}
-          <Button
-            type="submit"
-            variant="primary"
-            size="large"
-            fullWidth
-            disabled={loading}
-          >
+          <Button type="submit" size="large" fullWidth disabled={loading}>
             {loading ? "Iniciando sesión..." : "Iniciar sesión"}
           </Button>
         </form>

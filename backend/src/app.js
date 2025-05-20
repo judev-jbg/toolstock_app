@@ -19,8 +19,18 @@ if (process.env.NODE_ENV === 'production') {
 const app = express();
 
 // Middleware
-app.use(helmet()); // Seguridad HTTP
-app.use(cors()); // Permitir CORS
+
+app.use(
+  cors({
+    origin: 'http://localhost:5173', // o el origen de tu frontend
+    optionsSuccessStatus: 200,
+  })
+); // Permitir CORS
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false, // Esto permite que los archivos estáticos sean accesibles desde diferentes orígenes
+  })
+); // Seguridad HTTP
 app.use(express.json()); // Parsear body como JSON
 app.use(morgan('dev')); // Logging de HTTP requests
 

@@ -46,7 +46,7 @@
 .md-input-legend span {
   width: 0;
   padding: 0;
-  font-size: 0.9rem;
+  font-size: 1rem;
   max-width: 100%;
   white-space: nowrap;
   display: inline-block;
@@ -55,7 +55,6 @@
 
 .md-input-legend.active span {
   width: auto;
-  padding: 0 4px;
 }
 
 .md-input-label.with-ico {

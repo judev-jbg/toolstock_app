@@ -1,12 +1,15 @@
-// Archivo nuevo: frontend/src/components/profile/AvatarUpload.jsx
-
 import React, { useState, useRef } from "react";
 import { MdPhotoCamera, MdAccountCircle } from "react-icons/md";
 import Button from "../common/Button";
 
-const AvatarUpload = ({ currentAvatar, onAvatarChange, loading }) => {
+const AvatarUpload = ({
+  currentAvatar,
+  onAvatarChange,
+  loading,
+  updateAvatar,
+}) => {
   const [preview, setPreview] = useState(null);
-  const [selectedFile, setSelectedFile] = useState(null);
+  // const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
 
   // Manejar cambio de archivo
@@ -44,22 +47,19 @@ const AvatarUpload = ({ currentAvatar, onAvatarChange, loading }) => {
   };
 
   const handleConfirm = () => {
-    if (selectedFile) {
-      onAvatarChange(selectedFile);
-    }
+    updateAvatar();
   };
 
   const handleCancel = () => {
     setPreview(null);
-    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   // Generar URL de avatar actual
   const avatarUrl = currentAvatar
-    ? `${import.meta.env.VITE_API_URL.replace(
-        "/api",
-        ""
-      )}/uploads/avatars/${currentAvatar}`
+    ? `http://localhost:4000/uploads/avatars/${currentAvatar}`
     : null;
 
   return (
@@ -98,7 +98,7 @@ const AvatarUpload = ({ currentAvatar, onAvatarChange, loading }) => {
       {preview && (
         <div className="avatar-actions">
           <Button
-            variant="outline"
+            variant="outlined"
             onClick={handleCancel}
             disabled={loading}
             size="small"
@@ -106,7 +106,7 @@ const AvatarUpload = ({ currentAvatar, onAvatarChange, loading }) => {
             Cancelar
           </Button>
           <Button
-            variant="primary"
+            variant="filled"
             onClick={handleConfirm}
             disabled={loading}
             size="small"

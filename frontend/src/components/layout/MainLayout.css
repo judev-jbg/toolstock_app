@@ -11,6 +11,7 @@
   display: flex;
   flex-direction: column;
   transition: var(--transition);
+  border-right: 1px solid var(--border-color);
   position: fixed;
   height: 100vh;
   z-index: 100;
@@ -27,7 +28,7 @@
   align-items: center;
   justify-content: space-between;
   height: 70px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .logo {
@@ -134,7 +135,7 @@
   margin-left: var(--width-sidebar);
   padding: 1.5rem;
   transition: var(--transition);
-  background-color: var(--secondary-color);
+  background-color: var(--background-dark);
   min-height: 100vh;
 }
 

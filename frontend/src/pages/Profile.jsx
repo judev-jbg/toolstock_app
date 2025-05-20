@@ -38,7 +38,7 @@ const Profile = () => {
 
   // Verificar si hay cambios en el formulario
   const hasChanges = () => {
-    return formData.name !== initialFormData.name || avatarFile !== null;
+    return formData.name !== initialFormData.name;
   };
 
   // Mostrar notificación toast
@@ -71,39 +71,26 @@ const Profile = () => {
         return;
       }
 
-      // Actualizar perfil
-      const formDataToSend = {
-        name: formData.name,
-      };
-
-      if (avatarFile) {
-        // Crear FormData para subir avatar
-        const avatarFormData = new FormData();
-        avatarFormData.append("avatar", avatarFile);
-
-        // Subir avatar
-        try {
-          const avatarResponse = await authService.updateAvatar(avatarFormData);
-          formDataToSend.avatar = avatarResponse.avatar;
-        } catch (error) {
-          console.error("Error al subir avatar:", error);
-          showToast("Error al subir avatar", "error");
-          setLoading(false);
-          return;
-        }
-      }
-
-      const result = await updateProfile(formDataToSend);
-
-      if (result.success) {
-        showToast("Perfil actualizado correctamente", "success");
-        // Actualizar datos iniciales para reflejar los cambios
-        setInitialFormData({
-          ...initialFormData,
+      if (hasChanges()) {
+        // Actualizar perfil
+        const formDataToSend = {
           name: formData.name,
-        });
-      } else {
-        showToast(result.error || "Error al actualizar perfil", "error");
+        };
+
+        const result = await updateProfile(formDataToSend);
+
+        if (result.success) {
+          showToast("Perfil actualizado correctamente", "success");
+          // Actualizar datos iniciales para reflejar los cambios
+          setInitialFormData({
+            ...initialFormData,
+            name: formData.name,
+          });
+          setLoading(false);
+        } else {
+          setLoading(false);
+          showToast(result.error || "Error al actualizar perfil", "error");
+        }
       }
     } catch (error) {
       console.error("Error al actualizar perfil:", error);
@@ -143,6 +130,35 @@ const Profile = () => {
     setAvatarFile(file);
   };
 
+  const updateAvatar = () => {
+    handleAvatarSubmit();
+  };
+
+  const handleAvatarSubmit = async () => {
+    if (avatarFile === null) {
+      showToast("No hay cambios en el avatar", "info");
+      setLoading(false);
+      return;
+    }
+    if (avatarFile) {
+      // Crear FormData para subir avatar
+      const avatarFormData = new FormData();
+      avatarFormData.append("avatar", avatarFile);
+
+      // Subir avatar
+      try {
+        const avatarResponse = await authService.updateAvatar(avatarFormData);
+        user.avatar = avatarResponse.avatar;
+        setLoading(false);
+      } catch (error) {
+        console.error("Error al subir avatar:", error);
+        showToast("Error al subir avatar", "error");
+        setLoading(false);
+        return;
+      }
+    }
+  };
+
   // Mapear roles a nombres más amigables
   const getRoleName = (role) => {
     const roles = {
@@ -166,19 +182,20 @@ const Profile = () => {
           <AvatarUpload
             currentAvatar={user.avatar}
             onAvatarChange={handleAvatarChange}
+            updateAvatar={updateAvatar}
             loading={loading}
           />
 
           <div className="profile-actions">
             <Button
-              variant={passwordChangeMode ? "outline" : "primary"}
+              variant={passwordChangeMode ? "outlined" : "filled"}
               onClick={() => setPasswordChangeMode(false)}
               fullWidth
             >
               Editar Perfil
             </Button>
             <Button
-              variant={passwordChangeMode ? "primary" : "outline"}
+              variant={passwordChangeMode ? "filled" : "outlined"}
               onClick={() => setPasswordChangeMode(true)}
               fullWidth
             >
@@ -233,11 +250,7 @@ const Profile = () => {
                 disabled={true}
               />
 
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={loading || !hasChanges()}
-              >
+              <Button type="submit" disabled={loading || !hasChanges()}>
                 {loading ? "Guardando..." : "Guardar Cambios"}
               </Button>
             </form>
