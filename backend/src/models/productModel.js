@@ -132,7 +132,6 @@ const productSchema = new mongoose.Schema(
 );
 
 // Índices para búsqueda eficiente
-productSchema.index({ sku: 1 });
 productSchema.index({ name: 'text', description: 'text' });
 productSchema.index({ active: 1 });
 productSchema.index({ category: 1, subcategory: 1 });

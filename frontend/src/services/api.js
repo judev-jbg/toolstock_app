@@ -301,6 +301,42 @@ export const catalogService = {
     const response = await api.get(`/catalog/${id}`);
     return response.data;
   },
+  createProduct: async (productData) => {
+    const response = await api.post("/catalog", productData);
+    return response.data;
+  },
+  updateProduct: async (id, productData) => {
+    const response = await api.put(`/catalog/${id}`, productData);
+    return response.data;
+  },
+  updateProductField: async (id, field, value) => {
+    const response = await api.patch(`/catalog/${id}`, { field, value });
+    return response.data;
+  },
+  deleteProduct: async (id) => {
+    const response = await api.delete(`/catalog/${id}`);
+    return response.data;
+  },
+  getCategories: async () => {
+    const response = await api.get("/catalog/categories");
+    return response.data;
+  },
+  syncProductWithAmazon: async (id) => {
+    const response = await api.post(`/catalog/${id}/sync-amazon`);
+    return response.data;
+  },
+  syncProductWithPrestashop: async (id) => {
+    const response = await api.post(`/catalog/${id}/sync-prestashop`);
+    return response.data;
+  },
+  updateCompetitorPrices: async (id) => {
+    const response = await api.post(`/catalog/${id}/update-competitor-prices`);
+    return response.data;
+  },
+  optimizePrice: async (id) => {
+    const response = await api.post(`/catalog/${id}/optimize-price`);
+    return response.data;
+  },
 };
 
 export const messageService = {

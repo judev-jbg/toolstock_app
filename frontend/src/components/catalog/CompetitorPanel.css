@@ -1,0 +1,158 @@
+/* frontend/src/components/catalog/CompetitorPanel.css */
+.competitor-panel {
+  background-color: var(--background-card);
+  padding: 1.5rem;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.competitor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.competitor-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.optimize-button {
+  background-color: var(--primary-color);
+  color: var(--text-dark);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 3px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.optimize-button:hover {
+  background-color: var(--primary-color-hover);
+}
+
+.competitor-status {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.status-item {
+  background-color: var(--background-dark);
+  padding: 1rem;
+  border-radius: 4px;
+  flex: 1;
+}
+
+.status-label {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  margin-bottom: 0.5rem;
+}
+
+.status-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.status-badge.positive {
+  color: #4caf50;
+}
+
+.status-badge.negative {
+  color: var(--danger-color);
+}
+
+.competitors-table-container {
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
+}
+
+.competitors-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.competitors-table th,
+.competitors-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.competitors-table th {
+  background-color: var(--background-dark);
+  font-weight: 500;
+}
+
+.amazon-seller {
+  background-color: rgba(255, 153, 0, 0.1);
+}
+
+.seller-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fba-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background-color: #4caf50;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+}
+
+.buybox-badge {
+  display: flex;
+  justify-content: center;
+  color: #ffc107;
+  font-size: 1.25rem;
+}
+
+.no-data {
+  text-align: center;
+  padding: 2rem;
+  color: #888;
+}
+
+.recommendation {
+  background-color: var(--background-dark);
+  padding: 1rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+}
+
+.recommendation h4 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.recommendation p {
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .competitor-status {
+    flex-direction: column;
+  }
+}
