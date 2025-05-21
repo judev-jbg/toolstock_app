@@ -2,10 +2,12 @@ const mongoose = require('mongoose');
 
 const productSchema = new mongoose.Schema(
   {
+    // Identificadores
     sku: {
       type: String,
       required: true,
       unique: true,
+      index: true,
     },
     name: {
       type: String,
@@ -16,60 +18,71 @@ const productSchema = new mongoose.Schema(
       required: true,
     },
     shortDescription: String,
-    reference: String, // Referencia proveedor
+    reference: String, // Referencia proveedor (idArticuloProv en ERP)
 
-    // Precios
+    // Códigos y referencias
+    asin: {
+      type: String,
+      sparse: true,
+      index: true,
+    },
+    ean13: String, // CodBarras en ERP
+    upc: String,
+
+    // Precios y costos
     costPrice: {
       type: Number,
       required: true,
     },
     specialCostPrice: Number, // Costo especial temporal
 
+    // Margen y configuración de precios
     taxRate: {
       type: Number,
       default: 21, // IVA España por defecto
     },
-
-    // Margen de ganancia (porcentaje como decimal, ej: 0.75 para 25%)
     marginRate: {
       type: Number,
-      default: 0.75,
+      default: 0.75, // 0.75 = 25% de margen
     },
     specialMarginRate: Number, // Margen especial para este producto
 
-    // Costo de envío
+    // Costos de envío
     shippingCost: {
       type: Number,
       default: 8,
     },
     specialShippingCost: Number, // Costo de envío especial
 
-    // Precios calculados
-    minPrice: Number, // Precio mínimo calculado
+    // Precio mínimo calculado
+    minPrice: Number, // PVPM: Precio mínimo calculado
 
-    // Precios de venta actuales
-    amazonPrice: Number,
-    amazonBusinessPrice: Number,
-    amazonMinPrice: Number,
-    amazonMaxPrice: Number,
-    prestashopPrice: Number,
+    // Precios de venta
+    amazonPrice: Number, // Precio en Amazon (con IVA)
+    amazonBusinessPrice: Number, // Precio para empresas
+    amazonMinPrice: Number, // Precio mínimo Amazon
+    amazonMaxPrice: Number, // Precio máximo Amazon
+    prestashopPrice: Number, // PVP en Prestashop (sin IVA)
+    prestashopOfferPrice: Number, // Precio de oferta en Prestashop
+    isWebOffer: {
+      type: Boolean,
+      default: false,
+    }, // True cuando Observaciones contiene "OFERTA WEB"
 
-    // Información del producto
+    // Información física
     weight: Number, // Peso en kg
     height: Number, // Altura en cm
     width: Number, // Ancho en cm
     depth: Number, // Profundidad en cm
-    ean13: String,
-    upc: String,
 
-    // Información del catálogo
-    manufacturer: String,
+    // Categorización
+    manufacturer: String, // MarcaDescrip en ERP
     brand: String,
-    category: String,
+    category: String, // Familia en ERP
     subcategory: String,
     tags: [String],
 
-    // Información de stock
+    // Inventario
     erpStock: {
       type: Number,
       default: 0,
@@ -86,8 +99,20 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    equalizeStockWithErp: {
+      type: Boolean,
+      default: false,
+    }, // Check "igualar stock ERP"
+    setManualStock: {
+      type: Boolean,
+      default: false,
+    }, // Check "establecer stock"
 
-    // Estado en las plataformas
+    // Estados en plataformas
+    active: {
+      type: Boolean,
+      default: true, // Estado en ERP (0 = Activo, 1 = Anulado)
+    },
     activeInPrestashop: {
       type: Boolean,
       default: true,
@@ -97,34 +122,28 @@ const productSchema = new mongoose.Schema(
       default: true,
     },
 
-    // ASIN Amazon
-    asin: String,
+    // Estado en Amazon
+    hasBuyBox: {
+      type: Boolean,
+      default: false,
+    },
 
     // Tiempo de preparación (días)
     preparationTime: {
       type: Number,
-      default: 1,
+      default: 3, // 3 días por defecto
     },
 
     // URLs de imágenes
     mainImage: String,
     images: [String],
 
-    // Datos SEO
-    metaTitle: String,
-    metaDescription: String,
-    metaKeywords: String,
-
     // Datos de sincronización
     lastSyncWithErp: Date,
     lastSyncWithPrestashop: Date,
     lastSyncWithAmazon: Date,
-
-    // Estado general
-    active: {
-      type: Boolean,
-      default: true,
-    },
+    lastPriceUpdate: Date,
+    lastCompetitorCheck: Date,
   },
   {
     timestamps: true,
@@ -133,12 +152,11 @@ const productSchema = new mongoose.Schema(
 
 // Índices para búsqueda eficiente
 productSchema.index({ name: 'text', description: 'text' });
-productSchema.index({ active: 1 });
-productSchema.index({ category: 1, subcategory: 1 });
 productSchema.index({ manufacturer: 1 });
-productSchema.index({ asin: 1 });
+productSchema.index({ category: 1 });
+productSchema.index({ active: 1 });
 
-// Virtual para calcular el precio mínimo
+// Virtual para calcular el precio mínimo (PVPM)
 productSchema.virtual('calculatedMinPrice').get(function () {
   // Usar costo especial si existe, si no usar el costo normal
   const cost = this.specialCostPrice || this.costPrice;
@@ -160,6 +178,12 @@ productSchema.virtual('calculatedMinPrice').get(function () {
 productSchema.pre('save', function (next) {
   // Calcular y asignar precio mínimo antes de guardar
   this.minPrice = this.calculatedMinPrice;
+
+  // Asegurar que el precio de Prestashop sea 4% menor que Amazon
+  if (this.amazonPrice && !this.isWebOffer) {
+    this.prestashopPrice = this.amazonPrice * 0.96;
+  }
+
   next();
 });
 

@@ -1,7 +1,5 @@
 // backend/src/services/erp/productImportService.js
 const xlsx = require('xlsx');
-const fs = require('fs');
-const path = require('path');
 const Product = require('../../models/productModel');
 const PriceConfig = require('../../models/priceConfigModel');
 const { createLogger } = require('../../utils/logger');
@@ -75,17 +73,20 @@ class ProductImportService {
             description: item.Descripcion || '',
             reference: item.idArticuloProv?.toString() || '',
             costPrice: parseFloat(item.PrecioCompra) || 0,
+            ean13: item.CodBarras?.toString() || '',
             taxRate: priceConfig.defaultTaxRate,
             marginRate: priceConfig.defaultMarginRate,
             weight: parseFloat(item.Peso) || 0,
-            brand: item.MarcaDescrip || '',
             manufacturer: item.MarcaDescrip || '',
+            brand: item.MarcaDescrip || '',
             category: item.Familia || '',
-            ean13: item.CodBarras?.toString() || '',
             active: item.Estado === 0, // 0 = Activo, 1 = Anulado
             erpStock: parseInt(item.Stock) || 0,
+            // PVP del ERP (sin IVA)
+            prestashopPrice: parseFloat(item.PVP) || 0,
           };
 
+          // Calcular el precio mínimo según lógica requerida
           // Determinar el costo de envío según el peso
           if (productData.weight > 0 && priceConfig.weightRanges?.length > 0) {
             for (const range of priceConfig.weightRanges) {
@@ -103,6 +104,18 @@ class ProductImportService {
             productData.isWebOffer = true;
           }
 
+          // Calcular PVPM
+          const priceWithoutTax = productData.costPrice / productData.marginRate;
+          const taxAmount = priceWithoutTax * (productData.taxRate / 100);
+          productData.minPrice = priceWithoutTax + taxAmount + productData.shippingCost;
+
+          // Si no tiene precio Amazon, calcularlo como PVPM, o 4% más que Prestashop
+          if (!productData.amazonPrice && productData.prestashopPrice) {
+            productData.amazonPrice = productData.prestashopPrice * 1.04;
+          } else if (!productData.amazonPrice) {
+            productData.amazonPrice = productData.minPrice;
+          }
+
           // Buscar si ya existe el producto
           const existingProduct = await Product.findOne({ sku: productData.sku });
 
@@ -117,7 +130,12 @@ class ProductImportService {
                     'amazonBusinessPrice',
                     'amazonStock',
                     'asin',
-                    'prestashopPrice',
+                    'preparationTime',
+                    'hasBuyBox',
+                    'activeInAmazon',
+                    'activeInPrestashop',
+                    'equalizeStockWithErp',
+                    'setManualStock',
                   ].includes(key)
                 ) {
                   existingProduct[key] = productData[key];
@@ -161,12 +179,14 @@ class ProductImportService {
    */
   async recalculateAllPrices() {
     try {
-      const products = await Product.find({});
+      // Obtener la configuración de precios
       const priceConfig = await PriceConfig.findOne({ active: true });
-
       if (!priceConfig) {
         throw new Error('No se encontró configuración de precios');
       }
+
+      // Obtener todos los productos
+      const products = await Product.find({});
 
       let updated = 0;
       let errors = 0;
@@ -192,13 +212,18 @@ class ProductImportService {
           const minPrice = priceWithoutTax + taxAmount + shipping;
           product.minPrice = minPrice;
 
-          // Calcular precio para Prestashop (4% menos que Amazon)
-          if (product.amazonPrice) {
+          // Calcular precio para Prestashop (4% menos que Amazon) si no es oferta
+          if (product.amazonPrice && !product.isWebOffer) {
             product.prestashopPrice =
               product.amazonPrice * (1 - priceConfig.prestashopDiscount / 100);
-          } else if (product.minPrice) {
-            // Si no hay precio de Amazon, usar el mínimo para calcular precio de Prestashop
-            product.prestashopPrice = Math.max(product.minPrice, product.prestashopPrice || 0);
+          } else if (product.minPrice && !product.prestashopPrice) {
+            // Si no hay precio de Amazon ni de Prestashop, usar el mínimo para Prestashop
+            product.prestashopPrice = product.minPrice;
+          }
+
+          // Si el precio de Prestashop es menor que el PVPM, ajustarlo
+          if (product.prestashopPrice < product.minPrice) {
+            product.prestashopPrice = product.minPrice;
           }
 
           await product.save();
