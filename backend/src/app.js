@@ -50,13 +50,14 @@ app.use('/uploads/avatars', express.static(path.join(__dirname, '../uploads/avat
 
 app.use('/api/auth', require('./routes/authRoutes'));
 // app.use('/api/orders', require('./routes/orderRoutes'));
-app.use('/api/catalog', require('./routes/catalogRoutes'));
+
 // app.use('/api/messages', require('./routes/messageRoutes'));
 app.use('/api/integrations/amazon', require('./routes/amazonIntegrationRoutes'));
 app.use('/api/integrations/prestashop', require('./routes/prestashopIntegrationRoutes'));
 app.use('/api/integrations/sync', require('./routes/syncIntegrationRoutes'));
 app.use('/api/integrations/erp', require('./routes/erpIntegrationRoutes'));
 app.use('/api/shipping', require('./routes/shippingRoutes'));
+app.use('/api/settings', require('./routes/settingsRoutes'));
 
 // Ruta raíz
 app.get('/', (req, res) => {

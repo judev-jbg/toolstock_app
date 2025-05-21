@@ -1,4 +1,4 @@
-// frontend/src/components/catalog/ProductsTable.jsx
+// frontend/src/components/catalog/ProductsTable.jsx (actualización)
 import React, { useState } from "react";
 import "./ProductsTable.css";
 import {
@@ -7,6 +7,7 @@ import {
   FaAmazon,
   FaShoppingCart,
   FaChartLine,
+  FaCheck,
 } from "react-icons/fa";
 import { formatCurrency } from "../../utils/formatters";
 
@@ -19,9 +20,12 @@ const ProductsTable = ({
   onOptimizePrice,
   onSelectProduct,
   onInlineEdit,
+  onSelectionChange,
 }) => {
   const [editingCell, setEditingCell] = useState(null);
   const [editValue, setEditValue] = useState("");
+  const [selectedRows, setSelectedRows] = useState({});
+  const [selectAll, setSelectAll] = useState(false);
 
   // Campos que pueden ser editados directamente
   const editableFields = [
@@ -87,6 +91,35 @@ const ProductsTable = ({
     }
   };
 
+  // Manejar selección de fila
+  const handleRowSelect = (productId, selected) => {
+    const newSelectedRows = { ...selectedRows, [productId]: selected };
+    setSelectedRows(newSelectedRows);
+
+    // Calcular IDs seleccionados y notificar al componente padre
+    const selectedIds = Object.keys(newSelectedRows).filter(
+      (id) => newSelectedRows[id]
+    );
+    onSelectionChange(selectedIds);
+  };
+
+  // Manejar selección de todas las filas
+  const handleSelectAll = (e) => {
+    const isSelected = e.target.checked;
+    setSelectAll(isSelected);
+
+    // Crear objeto con todas las filas seleccionadas/deseleccionadas
+    const newSelectedRows = {};
+    products.forEach((product) => {
+      newSelectedRows[product._id] = isSelected;
+    });
+    setSelectedRows(newSelectedRows);
+
+    // Notificar cambio
+    const selectedIds = isSelected ? products.map((p) => p._id) : [];
+    onSelectionChange(selectedIds);
+  };
+
   // Renderizar celda editable o normal
   const renderCell = (product, field) => {
     const isEditing =
@@ -144,6 +177,13 @@ const ProductsTable = ({
       <table className="products-table">
         <thead>
           <tr>
+            <th className="select-column">
+              <input
+                type="checkbox"
+                checked={selectAll}
+                onChange={handleSelectAll}
+              />
+            </th>
             <th>SKU</th>
             <th>Nombre</th>
             <th>Costo</th>
@@ -157,7 +197,23 @@ const ProductsTable = ({
         </thead>
         <tbody>
           {products.map((product) => (
-            <tr key={product._id} onClick={() => onSelectProduct(product)}>
+            <tr
+              key={product._id}
+              onClick={() => onSelectProduct(product)}
+              className={selectedRows[product._id] ? "selected-row" : ""}
+            >
+              <td
+                className="select-column"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <input
+                  type="checkbox"
+                  checked={!!selectedRows[product._id]}
+                  onChange={(e) =>
+                    handleRowSelect(product._id, e.target.checked)
+                  }
+                />
+              </td>
               <td>{product.sku}</td>
               <td>{renderCell(product, "name")}</td>
               <td>{renderCell(product, "costPrice")}</td>
@@ -191,9 +247,17 @@ const ProductsTable = ({
                   >
                     <FaShoppingCart />
                   </span>
+                  {product.hasBuyBox && (
+                    <span
+                      className="platform-indicator buybox active"
+                      title="Tiene el Buy Box"
+                    >
+                      <FaCheck />
+                    </span>
+                  )}
                 </div>
               </td>
-              <td>
+              <td className="actions-cell" onClick={(e) => e.stopPropagation()}>
                 <div className="action-buttons">
                   <button
                     className="action-button"

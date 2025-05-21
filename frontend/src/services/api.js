@@ -337,6 +337,68 @@ export const catalogService = {
     const response = await api.post(`/catalog/${id}/optimize-price`);
     return response.data;
   },
+  importProducts: async (file, updateAll = false) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("updateAll", updateAll.toString());
+
+    const response = await api.post(
+      "/integrations/erp/import-products",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data;
+  },
+
+  // Recalcular todos los precios
+  recalculatePrices: async () => {
+    const response = await api.post("/integrations/erp/recalculate-prices");
+    return response.data;
+  },
+
+  // Obtener configuración de precios
+  getPriceConfig: async () => {
+    const response = await api.get("/settings/price-config");
+    return response.data;
+  },
+
+  // Actualizar configuración de precios
+  updatePriceConfig: async (configData) => {
+    const response = await api.put("/settings/price-config", configData);
+    return response.data;
+  },
+
+  // Actualizar stock en Amazon
+  updateAmazonStock: async (id, stock) => {
+    const response = await api.patch(`/catalog/${id}`, {
+      field: "amazonStock",
+      value: stock,
+    });
+    return response.data;
+  },
+
+  // Actualizar stocks masivamente
+  bulkUpdateStock: async (productIds, stockValue, platform = "amazon") => {
+    const response = await api.post("/catalog/bulk-update-stock", {
+      productIds,
+      stockValue,
+      platform,
+    });
+    return response.data;
+  },
+
+  // Actualizar precios masivamente
+  bulkUpdatePrices: async (productIds, priceAdjustment) => {
+    const response = await api.post("/catalog/bulk-update-prices", {
+      productIds,
+      priceAdjustment,
+    });
+    return response.data;
+  },
 };
 
 export const messageService = {

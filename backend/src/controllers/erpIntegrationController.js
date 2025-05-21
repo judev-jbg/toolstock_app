@@ -1,4 +1,6 @@
+// backend/src/controllers/erpIntegrationController.js (actualización)
 const ahoraFreewareAdapter = require('../services/erp/ahoraFreewareAdapter');
+const productImportService = require('../services/erp/productImportService');
 const multer = require('multer');
 const upload = multer();
 
@@ -58,11 +60,52 @@ const importOrderUpdates = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Importar productos desde ERP
+ * @route   POST /api/integrations/erp/import-products
+ * @access  Private
+ */
+const importProducts = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No se ha subido ningún archivo' });
+    }
+
+    const { updateAll = 'false' } = req.body;
+    const shouldUpdateAll = updateAll === 'true';
+
+    // Iniciar la importación
+    const result = await productImportService.importProductsFromExcel(req.file, shouldUpdateAll);
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error importando productos:', error);
+    res.status(500).json({ message: 'Error en el servidor' });
+  }
+};
+
+/**
+ * @desc    Recalcular precios de todos los productos
+ * @route   POST /api/integrations/erp/recalculate-prices
+ * @access  Private
+ */
+const recalculatePrices = async (req, res) => {
+  try {
+    const result = await productImportService.recalculateAllPrices();
+    res.json(result);
+  } catch (error) {
+    console.error('Error recalculando precios:', error);
+    res.status(500).json({ message: 'Error en el servidor', error: error.message });
+  }
+};
+
 // Middleware para manejar la subida de archivos
 const uploadMiddleware = upload.single('file');
 
 module.exports = {
   exportOrdersForERP,
   importOrderUpdates,
+  importProducts,
+  recalculatePrices,
   uploadMiddleware,
 };

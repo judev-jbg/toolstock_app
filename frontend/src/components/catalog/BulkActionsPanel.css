@@ -1,0 +1,102 @@
+/* frontend/src/components/catalog/BulkActionsPanel.css */
+.bulk-actions-panel {
+  background-color: var(--background-card);
+  border-radius: 3px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-left: 3px solid var(--primary-color);
+}
+
+.bulk-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.selected-count {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bulk-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.bulk-form {
+  margin-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 1rem;
+}
+
+.bulk-form h4 {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.price-form-row {
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.price-action {
+  flex: 1;
+  min-width: 250px;
+}
+
+.price-value {
+  width: 180px;
+}
+
+.action-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.action-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+  margin-left: auto;
+}
+
+@media (max-width: 768px) {
+  .bulk-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .form-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-actions {
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+}

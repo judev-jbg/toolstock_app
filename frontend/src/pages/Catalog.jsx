@@ -7,7 +7,16 @@ import ProductsTable from "../components/catalog/ProductsTable";
 import ProductFilters from "../components/catalog/ProductFilters";
 import ProductForm from "../components/catalog/ProductForm";
 import CompetitorPanel from "../components/catalog/CompetitorPanel";
-import { FaPlus, FaTimes } from "react-icons/fa";
+import ImportProductsModal from "../components/catalog/ImportProductsModal";
+import PriceConfigModal from "../components/catalog/PriceConfigModal";
+import BulkActionsPanel from "../components/catalog/BulkActionsPanel";
+import {
+  FaPlus,
+  FaTimes,
+  FaCog,
+  FaFileExcel,
+  FaCalculator,
+} from "react-icons/fa";
 import "./Catalog.css";
 
 const Catalog = () => {
@@ -25,12 +34,28 @@ const Catalog = () => {
   const [showForm, setShowForm] = useState(false);
   const [showCompetitorPanel, setShowCompetitorPanel] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: "", type: "" });
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [showPriceConfigModal, setShowPriceConfigModal] = useState(false);
+  const [priceConfig, setPriceConfig] = useState(null);
+  const [selectedProducts, setSelectedProducts] = useState([]);
 
   // Cargar productos
   useEffect(() => {
     fetchProducts();
     fetchCategories();
+    fetchPriceConfig();
   }, []);
+
+  // Función para cargar configuración de precios
+  const fetchPriceConfig = async () => {
+    try {
+      const config = await catalogService.getPriceConfig();
+      setPriceConfig(config);
+    } catch (error) {
+      console.error("Error al cargar configuración de precios:", error);
+      showToast("Error al cargar configuración de precios", "error");
+    }
+  };
 
   // Función para cargar productos con filtros y paginación
   const fetchProducts = async (page = 1, newFilters = null) => {
@@ -244,21 +269,184 @@ const Catalog = () => {
     }
   };
 
+  // Manejar importación de productos
+  const handleImportProducts = async (file, updateAll) => {
+    try {
+      setLoading(true);
+      const result = await catalogService.importProducts(file, updateAll);
+
+      if (result.success) {
+        showToast(
+          `Importación completada. ${result.stats.created} productos creados, ${result.stats.updated} actualizados`,
+          "success"
+        );
+        setShowImportModal(false);
+        fetchProducts(); // Recargar productos
+      } else {
+        showToast(result.message || "Error en la importación", "error");
+      }
+    } catch (error) {
+      console.error("Error en la importación de productos:", error);
+      showToast("Error en la importación", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Manejar actualización de configuración de precios
+  const handlePriceConfigSave = async (configData) => {
+    try {
+      setLoading(true);
+      const result = await catalogService.updatePriceConfig(configData);
+
+      if (result.config) {
+        setPriceConfig(result.config);
+        showToast("Configuración actualizada correctamente", "success");
+        setShowPriceConfigModal(false);
+      } else {
+        showToast("Error al actualizar configuración", "error");
+      }
+    } catch (error) {
+      console.error("Error al actualizar configuración:", error);
+      showToast("Error al actualizar configuración", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Manejar selección de productos
+  const handleProductSelection = (productIds) => {
+    setSelectedProducts(productIds);
+  };
+
+  // Manejar actualización masiva de stock
+  const handleBulkUpdateStock = async (productIds, stockValue) => {
+    try {
+      setLoading(true);
+      await catalogService.bulkUpdateStock(productIds, stockValue);
+      showToast(
+        `Stock actualizado para ${productIds.length} productos`,
+        "success"
+      );
+      fetchProducts(); // Recargar productos
+    } catch (error) {
+      console.error("Error en actualización masiva de stock:", error);
+      showToast("Error al actualizar stock", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Manejar actualización masiva de precios
+  const handleBulkUpdatePrices = async (productIds, priceAdjustment) => {
+    try {
+      setLoading(true);
+      await catalogService.bulkUpdatePrices(productIds, priceAdjustment);
+      showToast(
+        `Precios actualizados para ${productIds.length} productos`,
+        "success"
+      );
+      fetchProducts(); // Recargar productos
+    } catch (error) {
+      console.error("Error en actualización masiva de precios:", error);
+      showToast("Error al actualizar precios", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Manejar recálculo de PVPM
+  const handleRecalculateAllPrices = async () => {
+    try {
+      setLoading(true);
+      const result = await catalogService.recalculatePrices();
+
+      if (result.success) {
+        showToast(
+          `Precios recalculados correctamente para ${result.stats.updated} productos`,
+          "success"
+        );
+        fetchProducts(); // Recargar productos
+      } else {
+        showToast(result.message || "Error al recalcular precios", "error");
+      }
+    } catch (error) {
+      console.error("Error al recalcular precios:", error);
+      showToast("Error al recalcular precios", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Manejar recálculo de PVPM para productos seleccionados
+  const handleRecalculateSelectedPrices = async (productIds) => {
+    try {
+      setLoading(true);
+      // Implementar en el backend esta funcionalidad
+      // Por ahora, recalculamos todos
+      const result = await catalogService.recalculatePrices();
+
+      if (result.success) {
+        showToast(
+          `Precios PVPM recalculados para ${productIds.length} productos`,
+          "success"
+        );
+        fetchProducts(); // Recargar productos
+      } else {
+        showToast(result.message || "Error al recalcular precios", "error");
+      }
+    } catch (error) {
+      console.error("Error al recalcular precios:", error);
+      showToast("Error al recalcular precios", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    // frontend/src/pages/Catalog.jsx (continuación)
     <div className="catalog-container">
       <div className="catalog-header">
         <h1 className="page-title">Catálogo de Productos</h1>
-        <Button
-          variant="fab"
-          onClick={handleNewProduct}
-          icon={<FaPlus />}
-        ></Button>
+        <div className="catalog-actions">
+          <Button
+            variant="outlined"
+            onClick={() => setShowImportModal(true)}
+            icon={<FaFileExcel />}
+          >
+            Importar desde ERP
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => setShowPriceConfigModal(true)}
+            icon={<FaCog />}
+          >
+            Configuración
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={handleRecalculateAllPrices}
+            icon={<FaCalculator />}
+          >
+            Recalcular PVPM
+          </Button>
+          <Button
+            variant="fab"
+            onClick={handleNewProduct}
+            icon={<FaPlus />}
+          ></Button>
+        </div>
       </div>
 
       {!showForm && !showCompetitorPanel && (
         <>
           <ProductFilters onFilter={handleFilter} categories={categories} />
+
+          <BulkActionsPanel
+            selectedProducts={selectedProducts}
+            onBulkUpdateStock={handleBulkUpdateStock}
+            onBulkUpdatePrices={handleBulkUpdatePrices}
+            onRecalculatePrices={handleRecalculateSelectedPrices}
+          />
 
           {loading ? (
             <div className="loading-container">Cargando productos...</div>
@@ -272,6 +460,7 @@ const Catalog = () => {
                 onUpdatePrices={handleUpdatePrices}
                 onSelectProduct={handleSelectProduct}
                 onInlineEdit={handleInlineEdit}
+                onSelectionChange={handleProductSelection}
               />
 
               {/* Paginación */}
@@ -365,6 +554,25 @@ const Catalog = () => {
             onCancel={handleCancelForm}
           />
         </div>
+      )}
+
+      {/* Modal de importación */}
+      {showImportModal && (
+        <ImportProductsModal
+          onClose={() => setShowImportModal(false)}
+          onImport={handleImportProducts}
+          loading={loading}
+        />
+      )}
+
+      {/* Modal de configuración de precios */}
+      {showPriceConfigModal && (
+        <PriceConfigModal
+          onClose={() => setShowPriceConfigModal(false)}
+          onSave={handlePriceConfigSave}
+          loading={loading}
+          initialConfig={priceConfig}
+        />
       )}
 
       {toast.visible && (
