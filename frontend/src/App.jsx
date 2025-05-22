@@ -10,8 +10,6 @@ import MainLayout from "./components/layout/MainLayout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Orders from "./pages/Orders";
-import OrdersToShip from "./pages/OrdersToShip";
-import OrdersShipmentsHistory from "./pages/OrdersShipmentsHistory";
 import Catalog from "./pages/Catalog";
 import Messages from "./pages/Messages";
 import Profile from "./pages/Profile";
@@ -77,24 +75,6 @@ const AppRoutes = () => {
             <MainLayout>
               <Orders />
             </MainLayout>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/orders/to-ship"
-        element={
-          <ProtectedRoute>
-            <OrdersToShip />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/orders/shipments-history"
-        element={
-          <ProtectedRoute>
-            <OrdersShipmentsHistory />
           </ProtectedRoute>
         }
       />
