@@ -38,11 +38,13 @@ const Catalog = () => {
   const [showPriceConfigModal, setShowPriceConfigModal] = useState(false);
   const [priceConfig, setPriceConfig] = useState(null);
   const [selectedProducts, setSelectedProducts] = useState([]);
+  const [manufacturers, setManufacturers] = useState([]);
 
   // Cargar productos
   useEffect(() => {
     fetchProducts();
     fetchCategories();
+    fetchManufacturers();
     fetchPriceConfig();
   }, []);
 
@@ -54,6 +56,15 @@ const Catalog = () => {
     } catch (error) {
       console.error("Error al cargar configuración de precios:", error);
       showToast("Error al cargar configuración de precios", "error");
+    }
+  };
+
+  const fetchManufacturers = async () => {
+    try {
+      const manufacturers = await catalogService.getManufacturers();
+      setManufacturers(manufacturers);
+    } catch (error) {
+      console.error("Error al cargar fabricantes:", error);
     }
   };
 
@@ -314,6 +325,10 @@ const Catalog = () => {
     }
   };
 
+  const handleClearSelection = () => {
+    setSelectedProducts([]);
+  };
+
   // Manejar selección de productos
   const handleProductSelection = (productIds) => {
     setSelectedProducts(productIds);
@@ -439,13 +454,18 @@ const Catalog = () => {
 
       {!showForm && !showCompetitorPanel && (
         <>
-          <ProductFilters onFilter={handleFilter} categories={categories} />
+          <ProductFilters
+            onFilter={handleFilter}
+            categories={categories}
+            manufacturers={manufacturers}
+          />
 
           <BulkActionsPanel
             selectedProducts={selectedProducts}
             onBulkUpdateStock={handleBulkUpdateStock}
             onBulkUpdatePrices={handleBulkUpdatePrices}
             onRecalculatePrices={handleRecalculateSelectedPrices}
+            onClearSelection={handleClearSelection}
           />
 
           {loading ? (

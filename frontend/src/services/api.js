@@ -294,64 +294,62 @@ export const integrationService = {
 
 export const catalogService = {
   getProducts: async (filters = {}) => {
-    const response = await api.get("/api/catalog", { params: filters });
+    const response = await api.get("/catalog", { params: filters });
     return response.data;
   },
 
   getProductById: async (id) => {
-    const response = await api.get(`/api/catalog/${id}`);
+    const response = await api.get(`/catalog/${id}`);
     return response.data;
   },
 
   createProduct: async (productData) => {
-    const response = await api.post("/api/catalog", productData);
+    const response = await api.post("/catalog", productData);
     return response.data;
   },
 
   updateProduct: async (id, productData) => {
-    const response = await api.put(`/api/catalog/${id}`, productData);
+    const response = await api.put(`/catalog/${id}`, productData);
     return response.data;
   },
 
   updateProductField: async (id, field, value) => {
-    const response = await api.patch(`/api/catalog/${id}`, { field, value });
+    const response = await api.patch(`/catalog/${id}`, { field, value });
     return response.data;
   },
 
   deleteProduct: async (id) => {
-    const response = await api.delete(`/api/catalog/${id}`);
+    const response = await api.delete(`/catalog/${id}`);
     return response.data;
   },
 
   getCategories: async () => {
-    const response = await api.get("/api/catalog/categories");
+    const response = await api.get("/catalog/categories");
     return response.data;
   },
 
   getManufacturers: async () => {
-    const response = await api.get("/api/catalog/manufacturers");
+    const response = await api.get("/catalog/manufacturers");
     return response.data;
   },
 
   syncProductWithAmazon: async (id) => {
-    const response = await api.post(`/api/catalog/${id}/sync-amazon`);
+    const response = await api.post(`/catalog/${id}/sync-amazon`);
     return response.data;
   },
 
   syncProductWithPrestashop: async (id) => {
-    const response = await api.post(`/api/catalog/${id}/sync-prestashop`);
+    const response = await api.post(`/catalog/${id}/sync-prestashop`);
     return response.data;
   },
 
   updateCompetitorPrices: async (id) => {
-    const response = await api.post(
-      `/api/catalog/${id}/update-competitor-prices`
-    );
+    const response = await api.post(`/catalog/${id}/update-competitor-prices`);
     return response.data;
   },
 
   optimizePrice: async (id) => {
-    const response = await api.post(`/api/catalog/${id}/optimize-price`);
+    const response = await api.post(`/catalog/${id}/optimize-price`);
     return response.data;
   },
 
@@ -361,7 +359,7 @@ export const catalogService = {
     formData.append("updateAll", updateAll.toString());
 
     const response = await api.post(
-      "/api/integrations/erp/import-products",
+      "/integrations/erp/import-products",
       formData,
       {
         headers: {
@@ -373,22 +371,22 @@ export const catalogService = {
   },
 
   recalculatePrices: async () => {
-    const response = await api.post("/api/catalog/recalculate-prices");
+    const response = await api.post("/catalog/recalculate-prices");
     return response.data;
   },
 
   getPriceConfig: async () => {
-    const response = await api.get("/api/settings/price-config");
+    const response = await api.get("/settings/price-config");
     return response.data;
   },
 
   updatePriceConfig: async (configData) => {
-    const response = await api.put("/api/settings/price-config", configData);
+    const response = await api.put("/settings/price-config", configData);
     return response.data;
   },
 
   bulkUpdateStock: async (productIds, stockValue, platform = "amazon") => {
-    const response = await api.post("/api/catalog/bulk-update-stock", {
+    const response = await api.post("/catalog/bulk-update-stock", {
       productIds,
       stockValue,
       platform,
@@ -397,7 +395,7 @@ export const catalogService = {
   },
 
   bulkUpdatePrices: async (productIds, priceAdjustment) => {
-    const response = await api.post("/api/catalog/bulk-update-prices", {
+    const response = await api.post("/catalog/bulk-update-prices", {
       productIds,
       priceAdjustment,
     });

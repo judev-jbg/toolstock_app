@@ -6,6 +6,7 @@ import {
   FaMoneyBillWave,
   FaPercent,
   FaEuroSign,
+  FaTimes,
 } from "react-icons/fa";
 import Button from "../common/Button";
 import Input from "../common/Input";
@@ -16,6 +17,7 @@ const BulkActionsPanel = ({
   onBulkUpdateStock,
   onBulkUpdatePrices,
   onRecalculatePrices,
+  onClearSelection,
 }) => {
   const [stockValue, setStockValue] = useState(10);
   const [priceAction, setPriceAction] = useState("fixed");
@@ -33,6 +35,7 @@ const BulkActionsPanel = ({
 
     onBulkUpdateStock(selectedProducts, stockValue);
     setShowStockForm(false);
+    setStockValue(10); // Reset
   };
 
   // Manejar actualización masiva de precios
@@ -48,6 +51,13 @@ const BulkActionsPanel = ({
 
     onBulkUpdatePrices(selectedProducts, adjustment);
     setShowPriceForm(false);
+    setPriceValue(0); // Reset
+  };
+
+  // Manejar recálculo de PVPM
+  const handleRecalculatePrices = () => {
+    if (selectedCount === 0) return;
+    onRecalculatePrices(selectedProducts);
   };
 
   if (selectedCount === 0) {
@@ -64,12 +74,21 @@ const BulkActionsPanel = ({
 
         <div className="bulk-actions">
           <Button
+            variant="text"
+            size="small"
+            onClick={onClearSelection}
+            icon={<FaTimes />}
+          >
+            Limpiar
+          </Button>
+
+          <Button
             variant="outlined"
             size="small"
             onClick={() => setShowStockForm(!showStockForm)}
             icon={<FaBoxes />}
           >
-            Stock
+            Stock Amazon
           </Button>
 
           <Button
@@ -78,13 +97,13 @@ const BulkActionsPanel = ({
             onClick={() => setShowPriceForm(!showPriceForm)}
             icon={<FaMoneyBillWave />}
           >
-            Precios
+            Precios Amazon
           </Button>
 
           <Button
             variant="outlined"
             size="small"
-            onClick={() => onRecalculatePrices(selectedProducts)}
+            onClick={handleRecalculatePrices}
           >
             Recalcular PVPM
           </Button>
@@ -173,7 +192,7 @@ const BulkActionsPanel = ({
                       checked={priceAction === "percentage"}
                       onChange={() => setPriceAction("percentage")}
                     />
-                    <span>Porcentaje</span>
+                    <span>Incrementar %</span>
                   </label>
                 </div>
               </div>

@@ -1,4 +1,4 @@
-/* frontend/src/components/catalog/ProductFilters.css */
+/* frontend/src/components/catalog/ProductFilters.css - VERSIÓN ACTUALIZADA */
 .product-filters {
   background-color: var(--background-card);
   padding: 1rem;
@@ -17,6 +17,37 @@
   flex: 1;
 }
 
+/* Chips de estado */
+.state-chips {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.state-chip {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  background-color: transparent;
+  color: var(--text-light);
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.state-chip:hover {
+  background-color: rgba(255, 195, 144, 0.1);
+  border-color: var(--primary-color);
+}
+
+.state-chip.active {
+  background-color: var(--primary-color);
+  color: var(--text-dark);
+  border-color: var(--primary-color);
+}
+
 .filters-actions {
   display: flex;
   gap: 0.5rem;
@@ -25,7 +56,7 @@
 
 .advanced-filters {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1rem;
   margin-top: 1rem;
   padding-top: 1rem;
@@ -41,6 +72,7 @@
 .filter-group label {
   font-size: 0.85rem;
   opacity: 0.8;
+  font-weight: 500;
 }
 
 .filter-group select,
@@ -52,6 +84,13 @@
   color: var(--text-light);
   font-family: inherit;
   min-height: 36px;
+  transition: border-color 0.2s;
+}
+
+.filter-group select:focus,
+.filter-group input:focus {
+  outline: none;
+  border-color: var(--primary-color);
 }
 
 .price-range {
@@ -62,15 +101,36 @@
 
 .price-filter {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.price-filter input {
+  width: 100%;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .advanced-filters {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
 }
 
 @media (max-width: 768px) {
   .filters-row {
     flex-direction: column;
     align-items: stretch;
+    gap: 1rem;
+  }
+
+  .state-chips {
+    order: 2;
+    justify-content: center;
   }
 
   .filters-actions {
+    order: 3;
     justify-content: flex-end;
   }
 
@@ -80,5 +140,6 @@
 
   .price-range {
     grid-column: auto;
+    flex-direction: column;
   }
 }
