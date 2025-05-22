@@ -7,18 +7,13 @@ const path = require('path');
 const fs = require('fs');
 const { connectDB } = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
-const orderSyncScheduler = require('./services/schedulers/orderSyncScheduler');
 
 if (process.env.NODE_ENV === 'production') {
   orderSyncScheduler.init();
 }
 
-// Cargar variables de entorno
-
 // Inicializar Express
 const app = express();
-
-// Middleware
 
 app.use(
   cors({
@@ -34,20 +29,12 @@ app.use(
 app.use(express.json()); // Parsear body como JSON
 app.use(morgan('dev')); // Logging de HTTP requests
 
-const exportDirs = ['exports', 'exports/reports', 'exports/shipments', 'uploads'];
-exportDirs.forEach((dir) => {
-  const dirPath = path.join(__dirname, '..', dir);
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-});
-
 // Conectar a MongoDB
 connectDB();
 
 // Rutas
-app.use('/uploads/avatars', express.static(path.join(__dirname, '../uploads/avatars')));
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/uploads/avatars', express.static(path.join(__dirname, '../uploads/avatars')));
 
 // Ruta raíz
 app.get('/', (req, res) => {
