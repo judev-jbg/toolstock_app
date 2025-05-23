@@ -7,9 +7,10 @@ const path = require('path');
 const fs = require('fs');
 const { connectDB } = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
+const productScheduler = require('./services/schedulers/productScheduler');
 
 if (process.env.NODE_ENV === 'production') {
-  orderSyncScheduler.init();
+  productScheduler.init();
 }
 
 // Inicializar Express
@@ -34,6 +35,7 @@ connectDB();
 
 // Rutas
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/products', require('./routes/productRoutes'));
 app.use('/uploads/avatars', express.static(path.join(__dirname, '../uploads/avatars')));
 
 // Ruta raíz
@@ -52,5 +54,4 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-// Para tests
 module.exports = app;

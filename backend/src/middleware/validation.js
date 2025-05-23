@@ -1,5 +1,7 @@
 // In middleware/validation.js
 
+const { validationResult } = require('express-validator');
+
 const validateShipmentData = (req, res, next) => {
   const { destinatario, direccion, cp, poblacion } = req.body;
 

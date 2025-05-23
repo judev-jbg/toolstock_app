@@ -105,4 +105,55 @@ export const authService = {
   },
 };
 
+// Servicio para productos
+export const productService = {
+  // Obtener productos con filtros y paginación
+  getProducts: async (params = {}) => {
+    const response = await api.get("/products", { params });
+    return response.data;
+  },
+
+  // Obtener marcas disponibles
+  getBrands: async () => {
+    const response = await api.get("/products/brands");
+    return response.data;
+  },
+
+  // Obtener estadísticas de productos
+  getStats: async () => {
+    const response = await api.get("/products/stats");
+    return response.data;
+  },
+
+  // Obtener producto por ID
+  getProductById: async (id) => {
+    const response = await api.get(`/products/${id}`);
+    return response.data;
+  },
+
+  // Sincronizar productos con Amazon
+  syncProducts: async () => {
+    const response = await api.post("/products/sync");
+    return response.data;
+  },
+
+  // Actualizar stock de un producto
+  updateProductStock: async (id, quantity) => {
+    const response = await api.put(`/products/${id}/stock`, { quantity });
+    return response.data;
+  },
+
+  // Actualizar stock de múltiples productos
+  bulkUpdateStock: async (updates) => {
+    const response = await api.put("/products/bulk-stock", { updates });
+    return response.data;
+  },
+
+  // Verificar si hay productos que necesitan sincronización
+  checkSyncNeeded: async () => {
+    const response = await api.get("/products/sync-needed");
+    return response.data;
+  },
+};
+
 export default api;
