@@ -12,6 +12,7 @@ const {
   getAvailableEndpoints,
   getTestOrders,
   checkAmazonConfig,
+  updateProduct,
 } = require('../controllers/productController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { checkValidationResult } = require('../middleware/validation');
@@ -27,9 +28,25 @@ router.get('/:id', protect, getProductById);
 
 // Rutas de administración (requieren permisos de admin)
 router.post('/sync', protect, authorize('admin', 'root'), syncProducts);
-router.get('/endpoints', protect, authorize('admin', 'root'), getAvailableEndpoints);
-router.get('/test-orders', protect, authorize('admin', 'root'), getTestOrders);
-router.get('/config-check', protect, authorize('admin', 'root'), checkAmazonConfig);
+router.get('/debug/endpoints', protect, authorize('admin', 'root'), getAvailableEndpoints);
+router.get('/debug/test-orders', protect, authorize('admin', 'root'), getTestOrders);
+router.get('/debug/config-check', protect, authorize('admin', 'root'), checkAmazonConfig);
+
+// Rutas de actualización de productos
+router.put(
+  '/:id',
+  [
+    protect,
+    check('title', 'El título debe ser válido').optional().isLength({ min: 1 }),
+    check('brand', 'La marca debe ser válida').optional().isLength({ min: 1 }),
+    check('price', 'El precio debe ser un número válido').optional().isFloat({ min: 0 }),
+    check('status', 'El estado debe ser válido')
+      .optional()
+      .isIn(['Active', 'Inactive', 'Incomplete']),
+    checkValidationResult,
+  ],
+  updateProduct
+);
 
 // Rutas de actualización de stock
 router.put(

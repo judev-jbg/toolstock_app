@@ -1,6 +1,5 @@
 const Product = require('../models/productModel');
 const amazonService = require('../services/amazon/amazonService');
-const simpleAmazonService = require('../services/amazon/simpleAmazonService');
 const logger = require('../utils/logger').createLogger('productController');
 
 /**
@@ -89,7 +88,10 @@ const getProducts = async (req, res) => {
  */
 const getBrands = async (req, res) => {
   try {
-    const brands = await Product.distinct('brand', { brand: { $ne: '' } });
+    const brands = await Product.distinct('brand', {
+      brand: { $ne: '' },
+      brand: { $ne: null },
+    });
     res.json(brands.sort());
   } catch (error) {
     logger.error('Error getting brands:', error);
@@ -176,7 +178,6 @@ const getProductById = async (req, res) => {
 const syncProducts = async (req, res) => {
   try {
     logger.info('Starting manual product sync...');
-    // Usar el servicio principal corregido
     const results = await amazonService.syncProductsWithDatabase();
 
     res.json({
@@ -208,23 +209,44 @@ const updateProductStock = async (req, res) => {
     }
 
     const product = await Product.findById(req.params.id);
-
     if (!product) {
       return res.status(404).json({ message: 'Producto no encontrado' });
     }
 
-    // Actualizar en Amazon
-    await amazonService.updateInventoryQuantity(product.sellerSku, quantity);
+    logger.info(
+      `Updating stock for product ${product.sellerSku} from ${product.quantity} to ${quantity}`
+    );
 
-    // Actualizar en base de datos local
-    product.quantity = quantity;
-    product.lastInventoryUpdate = new Date();
-    await product.save();
+    try {
+      // Actualizar en Amazon primero
+      const amazonResult = await amazonService.updateInventoryQuantity(product.sellerSku, quantity);
 
-    res.json({
-      message: 'Stock actualizado correctamente',
-      product,
-    });
+      res.json({
+        message: 'Stock actualizado correctamente en Amazon y localmente',
+        product: amazonResult.local,
+        amazonResponse: {
+          success: amazonResult.success,
+          submissionId: amazonResult.amazon?.submissionId || null,
+        },
+      });
+    } catch (amazonError) {
+      logger.error(`Error updating stock in Amazon for ${product.sellerSku}:`, amazonError);
+
+      // Si falla Amazon, actualizar solo localmente pero informar del error
+      product.quantity = quantity;
+      product.lastInventoryUpdate = new Date();
+      product.syncStatus = 'error';
+      product.syncError = `Error actualizando en Amazon: ${amazonError.message}`;
+      await product.save();
+
+      res.status(207).json({
+        message: 'Stock actualizado localmente, pero falló la actualización en Amazon',
+        product,
+        error: amazonError.message,
+        warning:
+          'El stock se actualizó solo en la base de datos local. Verifique la configuración de Amazon SP-API.',
+      });
+    }
   } catch (error) {
     logger.error('Error updating product stock:', error);
     res.status(500).json({
@@ -258,6 +280,8 @@ const bulkUpdateStock = async (req, res) => {
       }
     }
 
+    logger.info(`Starting bulk stock update for ${updates.length} products`);
+
     // Obtener productos
     const productIds = updates.map((u) => u.id);
     const products = await Product.find({ _id: { $in: productIds } });
@@ -277,18 +301,76 @@ const bulkUpdateStock = async (req, res) => {
       };
     });
 
-    // Actualizar usando el servicio principal
-    const results = await amazonService.bulkUpdateInventory(amazonUpdates);
+    try {
+      // Actualizar en Amazon usando el servicio principal
+      const results = await amazonService.bulkUpdateInventory(amazonUpdates);
 
-    res.json({
-      message: 'Actualización masiva completada',
-      results: {
-        successful: results.success.length,
-        failed: results.errors.length,
-        details: results,
-        note: 'Los cambios se han guardado localmente. Para sincronizar con Amazon se requiere configuración adicional de la API.',
-      },
-    });
+      // Preparar respuesta detallada
+      const response = {
+        message: 'Actualización masiva completada',
+        results: {
+          total: updates.length,
+          successful: results.success.length,
+          failed: results.errors.length,
+          details: {
+            success: results.success,
+            errors: results.errors,
+          },
+        },
+      };
+
+      if (results.errors.length > 0) {
+        res.status(207).json({
+          ...response,
+          warning: `${results.errors.length} productos fallaron al actualizar en Amazon`,
+        });
+      } else {
+        res.json(response);
+      }
+    } catch (error) {
+      logger.error('Error in bulk stock update:', error);
+
+      // Si falla completamente, actualizar solo localmente
+      const localResults = {
+        success: [],
+        errors: [],
+      };
+
+      for (const update of updates) {
+        try {
+          const product = products.find((p) => p._id.toString() === update.id);
+          product.quantity = update.quantity;
+          product.lastInventoryUpdate = new Date();
+          product.syncStatus = 'error';
+          product.syncError = 'Error en actualización masiva de Amazon';
+          await product.save();
+
+          localResults.success.push({
+            sellerSku: product.sellerSku,
+            quantity: update.quantity,
+            updatedLocally: true,
+          });
+        } catch (localError) {
+          localResults.errors.push({
+            id: update.id,
+            error: localError.message,
+          });
+        }
+      }
+
+      res.status(207).json({
+        message: 'Error en actualización masiva de Amazon, actualizado solo localmente',
+        results: {
+          total: updates.length,
+          successful: localResults.success.length,
+          failed: localResults.errors.length,
+          details: localResults,
+        },
+        error: error.message,
+        warning:
+          'Los cambios se guardaron solo en la base de datos local. Verifique la configuración de Amazon SP-API.',
+      });
+    }
   } catch (error) {
     logger.error('Error in bulk stock update:', error);
     res.status(500).json({
@@ -386,6 +468,43 @@ const checkAmazonConfig = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Actualizar un producto específico (NUEVO)
+ * @route   PUT /api/products/:id
+ * @access  Private
+ */
+const updateProduct = async (req, res) => {
+  try {
+    const { title, brand, price, status } = req.body;
+
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: 'Producto no encontrado' });
+    }
+
+    // Actualizar campos permitidos
+    if (title) product.title = title;
+    if (brand) product.brand = brand;
+    if (price !== undefined) product.price = price;
+    if (status) product.status = status;
+
+    product.lastInventoryUpdate = new Date();
+
+    const updatedProduct = await product.save();
+
+    res.json({
+      message: 'Producto actualizado correctamente',
+      product: updatedProduct,
+    });
+  } catch (error) {
+    logger.error('Error updating product:', error);
+    res.status(500).json({
+      message: 'Error actualizando producto',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getProducts,
   getBrands,
@@ -398,4 +517,5 @@ module.exports = {
   getAvailableEndpoints,
   getTestOrders,
   checkAmazonConfig,
+  updateProduct,
 };

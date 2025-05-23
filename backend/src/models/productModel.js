@@ -36,19 +36,16 @@ const productSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['Active', 'Inactive', 'Incomplete'],
-      default: 'Active',
+      default: '',
       index: true,
     },
     condition: {
       type: String,
-      enum: ['New', 'Used', 'Collectible', 'Refurbished'],
-      default: 'New',
+      default: '',
     },
     fulfillmentChannel: {
       type: String,
-      enum: ['MFN', 'AFN'],
-      default: 'MFN',
+      default: '',
     },
     productType: {
       type: String,
