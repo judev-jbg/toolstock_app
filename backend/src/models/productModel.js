@@ -2,61 +2,66 @@ const mongoose = require('mongoose');
 
 const productSchema = new mongoose.Schema(
   {
-    asin: {
-      type: String,
-      required: true,
-      index: true,
-    },
-    sellerSku: {
+    erp_sku: {
       type: String,
       required: true,
       unique: true,
       index: true,
     },
-    title: {
+    amz_asin: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    amz_sellerSku: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    amz_title: {
       type: String,
       required: true,
     },
-    brand: {
+    amz_brand: {
       type: String,
       default: '',
       index: true,
     },
-    price: {
+    amz_price: {
       type: Number,
       default: 0,
     },
-    currency: {
+    amz_currency: {
       type: String,
       default: 'EUR',
     },
-    quantity: {
+    amz_quantity: {
       type: Number,
       default: 0,
     },
-    status: {
+    amz_status: {
       type: String,
       default: '',
       index: true,
     },
-    condition: {
+    amz_condition: {
       type: String,
       default: '',
     },
-    fulfillmentChannel: {
+    amz_fulfillmentChannel: {
       type: String,
       default: '',
     },
-    productType: {
+    amz_productType: {
       type: String,
       default: '',
     },
-    imageUrl: {
+    amz_imageUrl: {
       type: String,
       default: '',
     },
     // Datos adicionales de Amazon
-    amazonData: {
+    amz_amazonData: {
       itemName: String,
       itemDescription: String,
       listingId: String,
@@ -78,22 +83,63 @@ const productSchema = new mongoose.Schema(
       ],
     },
     // Fechas de sincronización
-    lastSyncAt: {
+    amz_lastSyncAt: {
       type: Date,
       default: Date.now,
     },
-    lastInventoryUpdate: {
+    amz_lastInventoryUpdate: {
       type: Date,
     },
-    // Estado de sincronización
-    syncStatus: {
+
+    amz_syncStatus: {
       type: String,
       enum: ['synced', 'pending', 'error'],
       default: 'pending',
     },
-    syncError: {
+    amz_syncError: {
       type: String,
       default: '',
+    },
+
+    erp_name: {
+      type: String,
+      index: true,
+    },
+    erp_skuSuplier: {
+      type: String,
+      index: true,
+    },
+    erp_manufacturer: {
+      type: String,
+      index: true,
+    },
+    erp_cost: {
+      type: Number,
+      default: 0,
+    },
+    erp_price: {
+      type: Number,
+      default: 0,
+    },
+    erp_barcode: {
+      type: String,
+      index: true,
+    },
+    erp_obs: {
+      type: String,
+      index: true,
+    },
+    erp_status: {
+      type: Number,
+      default: 0,
+    },
+    erp_weight: {
+      type: Number,
+      default: 0.0,
+    },
+    erp_stock: {
+      type: Number,
+      default: 0,
     },
   },
   {

@@ -103,36 +103,36 @@ class AmazonService {
     const attributes = listing.attributes || {};
     const offers = listing.offers || [];
     const fulfillmentAvailability = listing.fulfillmentAvailability || [];
-    const asin = summary.asin;
-    const title = summary.itemName || attributes.item_name?.[0]?.value || listing.sku;
-    const brand = attributes.manufacturer?.[0].value || attributes.brand?.[0].value;
-    const price = offers[0].price.amount;
-    const quantity = fulfillmentAvailability[0].quantity;
-    const status = '';
-    const imageUrl =
+    const amz_asin = summary.asin;
+    const amz_title = summary.itemName || attributes.item_name?.[0]?.value || listing.sku;
+    const amz_brand = attributes.manufacturer?.[0].value || attributes.brand?.[0].value;
+    const amz_price = offers[0].price.amount;
+    const amz_quantity = fulfillmentAvailability[0].quantity;
+    const amz_status = '';
+    const amz_imageUrl =
       summary.mainImage?.link || attributes.main_product_image_locator?.[0]?.media_location || '';
-    const condition = this.mapConditionType(
+    const amz_condition = this.mapConditionType(
       summary.conditionType || attributes.condition_type?.[0]?.value || 'new_new'
     );
-    const fulfillmentChannel = this.determineFulfillmentChannel(
+    const amz_fulfillmentChannel = this.determineFulfillmentChannel(
       fulfillmentAvailability,
       attributes
     );
 
     return {
-      asin,
-      sellerSku: listing.sku,
-      title,
-      brand,
-      quantity,
-      condition,
-      fulfillmentChannel,
-      status,
-      price,
-      currency: 'EUR',
-      productType: summary.productType || attributes.product_type || 'physical',
-      imageUrl,
-      amazonData: {
+      amz_asin,
+      amz_sellerSku: listing.sku,
+      amz_title,
+      amz_brand,
+      amz_quantity,
+      amz_condition,
+      amz_fulfillmentChannel,
+      amz_status,
+      amz_price,
+      amz_currency: 'EUR',
+      amz_productType: summary.productType || attributes.product_type || 'physical',
+      amz_imageUrl,
+      amz_amazonData: {
         itemName: title,
         listingId: listing.listingId || '',
         productId: summary.productId || '',
@@ -382,7 +382,7 @@ class AmazonService {
         }
       }
 
-      // 2. Obtener y procesar reporte de listings para actualizar status
+      // 2. Obtener y procesar reporte de listings para actualizar status (TODA NO IMPLEMETAR ESTA FUNCIONALIDAD)
       // try {
       //   await this.updateProductStatusFromReport();
       //   syncResults.sources.statusReport++;
