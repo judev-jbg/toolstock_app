@@ -137,6 +137,29 @@ export const productService = {
     return response.data;
   },
 
+  // Sincronizar status de productos usando reporte de merchant listings
+  syncProductStatus: async () => {
+    const response = await api.post("/products/sync-status");
+    return response.data;
+  },
+
+  // Solicitar reporte de merchant listings
+  requestListingsReport: async () => {
+    const response = await api.post("/products/request-listings-report");
+    return response.data;
+  },
+
+  // Verificar estado de un reporte
+  checkReportStatus: async (reportId) => {
+    const response = await api.get(`/products/report-status/${reportId}`);
+    return response.data;
+  },
+
+  // Obtener reportes disponibles
+  getAvailableReports: async () => {
+    const response = await api.get("/products/available-reports");
+    return response.data;
+  },
   // Actualizar stock de un producto
   updateProductStock: async (id, quantity) => {
     const response = await api.put(`/products/${id}/stock`, { quantity });

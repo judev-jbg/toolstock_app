@@ -131,6 +131,43 @@ const Catalog = () => {
     }
   };
 
+  // Función para sincronizar status de productos
+  const handleSyncStatus = async () => {
+    try {
+      setSyncLoading(true);
+      showToast(
+        "Iniciando sincronización de status (esto puede tomar varios minutos)...",
+        "info"
+      );
+
+      const results = await productService.syncProductStatus();
+
+      if (results.results.productsUpdated > 0) {
+        showToast(
+          `Sincronización de status completada: ${results.results.productsUpdated} productos actualizados`,
+          "success"
+        );
+      } else {
+        showToast(
+          "Sincronización de status completada - No hay cambios",
+          "info"
+        );
+      }
+
+      loadProducts();
+      loadStats();
+    } catch (error) {
+      console.error("Error syncing product status:", error);
+      showToast(
+        "Error en la sincronización de status: " +
+          (error.response?.data?.message || error.message),
+        "error"
+      );
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
   // Función para actualizar stock masivo
   const handleBulkStockUpdate = async (updates) => {
     try {

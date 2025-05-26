@@ -184,6 +184,7 @@ const syncProducts = async (req, res) => {
       message: 'Sincronización completada',
       results,
     });
+    logger.info('Completed manual product sync...');
   } catch (error) {
     logger.error('Error syncing products:', error);
     res.status(500).json({

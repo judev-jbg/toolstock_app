@@ -345,44 +345,23 @@ class AmazonService {
   }
 
   /**
-   * Sincroniza productos con la base de datos local (MEJORADO)
+   * Sincroniza productos con la base de datos local
    */
   async syncProductsWithDatabase() {
     try {
-      logger.info('Starting comprehensive product synchronization...');
+      logger.info('Starting comprehensive product synchronization without FBA...');
 
       const syncResults = {
         created: 0,
         updated: 0,
         errors: 0,
         sources: {
-          fba: 0,
           listings: 0,
+          statusReport: 0,
         },
       };
 
-      // 1. Obtener inventario FBA
-      const fbaItems = await this.getFBAInventory();
-      logger.info(`Processing ${fbaItems.length} FBA items`);
-
-      for (const item of fbaItems) {
-        try {
-          const productData = this.mapFBAItemToProduct(item);
-          const result = await this.upsertProduct(productData);
-
-          if (result.upserted) {
-            syncResults.created++;
-          } else {
-            syncResults.updated++;
-          }
-          syncResults.sources.fba++;
-        } catch (error) {
-          logger.error(`Error processing FBA item ${item.sellerSku}:`, error);
-          syncResults.errors++;
-        }
-      }
-
-      // 2. Obtener TODOS los listings (productos MFN y adicionales)
+      // 1. Obtener TODOS los listings (productos MFN)
       const allListings = await this.getAllListingsItems();
       logger.info(`Processing ${allListings.length} listings`);
 
@@ -403,10 +382,295 @@ class AmazonService {
         }
       }
 
+      // 2. Obtener y procesar reporte de listings para actualizar status
+      // try {
+      //   await this.updateProductStatusFromReport();
+      //   syncResults.sources.statusReport++;
+      //   logger.info('Product status updated from merchant listings report');
+      // } catch (error) {
+      //   logger.error('Error updating status from report:', error);
+      //   // No falla toda la sincronización si el reporte falla
+      // }
+
       logger.info('Product synchronization completed:', syncResults);
       return syncResults;
     } catch (error) {
       logger.error('Error in product synchronization:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Solicita el reporte GET_MERCHANT_LISTINGS_ALL_DATA
+   */
+  async requestMerchantListingsReport() {
+    try {
+      logger.info('Requesting merchant listings report...');
+
+      const result = await spApiClient.executeWithRetry(async (client) => {
+        const response = await client.callAPI({
+          operation: 'createReport',
+          endpoint: 'reports',
+          body: {
+            reportType: 'GET_MERCHANT_LISTINGS_ALL_DATA',
+            marketplaceIds: [this.marketplaceId],
+          },
+        });
+        return response;
+      });
+
+      logger.info(`Report requested with ID: ${result.reportId}`);
+      return result.reportId;
+    } catch (error) {
+      logger.error('Error requesting merchant listings report:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Verifica el estado del reporte
+   */
+  async checkReportStatus(reportId) {
+    try {
+      const result = await spApiClient.executeWithRetry(async (client) => {
+        const response = await client.callAPI({
+          operation: 'getReport',
+          endpoint: 'reports',
+          path: {
+            reportId: reportId,
+          },
+        });
+        return response;
+      });
+
+      return result;
+    } catch (error) {
+      logger.error(`Error checking report status for ${reportId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Espera a que el reporte esté listo y lo descarga
+   */
+  async waitForReportAndDownload(reportId, maxWaitMinutes = 10) {
+    try {
+      const maxAttempts = maxWaitMinutes * 2; // Revisar cada 30 segundos
+      let attempts = 0;
+
+      while (attempts < maxAttempts) {
+        const reportStatus = await this.checkReportStatus(reportId);
+
+        logger.info(`Report ${reportId} status: ${reportStatus.processingStatus}`);
+
+        if (reportStatus.processingStatus === 'DONE') {
+          if (reportStatus.reportDocumentId) {
+            return await this.downloadReportDocument(reportStatus.reportDocumentId);
+          } else {
+            throw new Error('Report completed but no document ID available');
+          }
+        } else if (
+          reportStatus.processingStatus === 'CANCELLED' ||
+          reportStatus.processingStatus === 'FATAL'
+        ) {
+          throw new Error(`Report failed with status: ${reportStatus.processingStatus}`);
+        }
+
+        // Esperar 30 segundos antes del siguiente intento
+        await new Promise((resolve) => setTimeout(resolve, 30000));
+        attempts++;
+      }
+
+      throw new Error(`Report ${reportId} not ready after ${maxWaitMinutes} minutes`);
+    } catch (error) {
+      logger.error(`Error waiting for report ${reportId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Descarga el documento del reporte
+   */
+  async downloadReportDocument(reportDocumentId) {
+    try {
+      // Primero obtener la URL de descarga
+      const documentInfo = await spApiClient.executeWithRetry(async (client) => {
+        const response = await client.callAPI({
+          operation: 'getReportDocument',
+          endpoint: 'reports',
+          path: {
+            reportDocumentId: reportDocumentId,
+          },
+        });
+        return response;
+      });
+
+      // Descargar el contenido del reporte
+      const axios = require('axios');
+      const reportResponse = await axios.get(documentInfo.url, {
+        timeout: 60000, // 60 segundos timeout
+        responseType: 'text',
+      });
+
+      logger.info(`Downloaded report document: ${reportDocumentId}`);
+      return reportResponse.data;
+    } catch (error) {
+      logger.error(`Error downloading report document ${reportDocumentId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Procesa el CSV del reporte de merchant listings
+   */
+  processListingsReportCSV(csvData) {
+    try {
+      const lines = csvData.split('\n');
+      if (lines.length < 2) {
+        throw new Error('Invalid CSV data - no data rows found');
+      }
+
+      // Obtener headers
+      const headers = lines[0].split('\t').map((header) => header.trim());
+
+      // Encontrar índices de columnas importantes
+      const sellerSkuIndex = headers.findIndex((h) => h.toLowerCase().includes('seller-sku'));
+      const statusIndex = headers.findIndex((h) => h.toLowerCase().includes('status'));
+      const itemNameIndex = headers.findIndex((h) => h.toLowerCase().includes('item-name'));
+      const priceIndex = headers.findIndex((h) => h.toLowerCase().includes('price'));
+      const quantityIndex = headers.findIndex((h) => h.toLowerCase().includes('quantity'));
+
+      if (sellerSkuIndex === -1 || statusIndex === -1) {
+        throw new Error('Required columns (seller-sku, status) not found in report');
+      }
+
+      logger.info(
+        `Found columns - SKU: ${sellerSkuIndex}, Status: ${statusIndex}, Name: ${itemNameIndex}, Price: ${priceIndex}, Quantity: ${quantityIndex}`
+      );
+
+      const products = [];
+
+      // Procesar cada fila de datos
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        const columns = line.split('\t');
+
+        if (columns.length > sellerSkuIndex && columns.length > statusIndex) {
+          const sellerSku = columns[sellerSkuIndex]?.trim();
+          const status = columns[statusIndex]?.trim();
+
+          if (sellerSku && status) {
+            const productData = {
+              sellerSku,
+              status: this.mapReportStatus(status),
+            };
+
+            // Agregar campos opcionales si están disponibles
+            if (itemNameIndex !== -1 && columns[itemNameIndex]) {
+              productData.title = columns[itemNameIndex].trim();
+            }
+            if (priceIndex !== -1 && columns[priceIndex]) {
+              const price = parseFloat(columns[priceIndex]);
+              if (!isNaN(price)) {
+                productData.price = price;
+              }
+            }
+            if (quantityIndex !== -1 && columns[quantityIndex]) {
+              const quantity = parseInt(columns[quantityIndex]);
+              if (!isNaN(quantity)) {
+                productData.quantity = quantity;
+              }
+            }
+
+            products.push(productData);
+          }
+        }
+      }
+
+      logger.info(`Processed ${products.length} products from report`);
+      return products;
+    } catch (error) {
+      logger.error('Error processing listings report CSV:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mapea el status del reporte al formato interno
+   */
+  mapReportStatus(reportStatus) {
+    if (!reportStatus) return 'Unknown';
+
+    const status = reportStatus.toUpperCase();
+    const statusMap = {
+      ACTIVE: 'Active',
+      INACTIVE: 'Inactive',
+      INCOMPLETE: 'Incomplete',
+      SUPPRESSED: 'Inactive',
+      BLOCKED: 'Inactive',
+      BUYABLE: 'Active',
+      DISCOVERABLE: 'Active',
+    };
+
+    return reportStatus;
+  }
+
+  /**
+   * Actualiza el status de los productos usando el reporte
+   */
+  async updateProductStatusFromReport() {
+    try {
+      logger.info('Starting product status update from merchant listings report...');
+
+      // 1. Solicitar el reporte
+      const reportId = await this.requestMerchantListingsReport();
+
+      // 2. Esperar a que esté listo y descargarlo
+      const csvData = await this.waitForReportAndDownload(reportId);
+
+      // 3. Procesar el CSV
+      const reportProducts = this.processListingsReportCSV(csvData);
+
+      // 4. Actualizar productos en la base de datos
+      let updated = 0;
+      let errors = 0;
+
+      for (const reportProduct of reportProducts) {
+        try {
+          const updateData = {
+            status: reportProduct.status,
+            lastSyncAt: new Date(),
+            syncStatus: 'synced',
+          };
+
+          // Agregar campos opcionales si están disponibles
+          if (reportProduct.title) {
+            updateData.title = reportProduct.title;
+          }
+          if (reportProduct.price !== undefined) {
+            updateData.price = reportProduct.price;
+          }
+          if (reportProduct.quantity !== undefined) {
+            updateData.quantity = reportProduct.quantity;
+          }
+
+          await Product.findOneAndUpdate({ sellerSku: reportProduct.sellerSku }, updateData, {
+            new: true,
+          });
+
+          updated++;
+        } catch (error) {
+          logger.error(`Error updating product ${reportProduct.sellerSku}:`, error);
+          errors++;
+        }
+      }
+
+      logger.info(`Status update completed: ${updated} updated, ${errors} errors`);
+      return { updated, errors };
+    } catch (error) {
+      logger.error('Error updating product status from report:', error);
       throw error;
     }
   }
@@ -570,7 +834,6 @@ class AmazonService {
     };
   }
 
-  // ... resto de métodos sin cambios (upsertProduct, determineProductStatus, extractBrandFromTitle, etc.)
   async upsertProduct(productData) {
     try {
       const result = await Product.findOneAndUpdate(

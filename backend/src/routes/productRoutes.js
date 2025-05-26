@@ -24,7 +24,6 @@ router.get('/', protect, getProducts);
 router.get('/brands', protect, getBrands);
 router.get('/stats', protect, getProductStats);
 router.get('/sync-needed', protect, getProductsNeedingSync);
-router.get('/:id', protect, getProductById);
 
 // Rutas de administración (requieren permisos de admin)
 router.post('/sync', protect, authorize('admin', 'root'), syncProducts);
@@ -32,7 +31,25 @@ router.get('/debug/endpoints', protect, authorize('admin', 'root'), getAvailable
 router.get('/debug/test-orders', protect, authorize('admin', 'root'), getTestOrders);
 router.get('/debug/config-check', protect, authorize('admin', 'root'), checkAmazonConfig);
 
-// Rutas de actualización de productos
+// IMPORTANTE: Rutas específicas ANTES de rutas con parámetros
+// Rutas de actualización de stock (antes de /:id)
+router.put(
+  '/bulk-stock',
+  [
+    protect,
+    check('updates', 'Se requiere un array de actualizaciones').isArray({ min: 1 }),
+    check('updates.*.id', 'Cada actualización debe tener un ID válido').isMongoId(),
+    check('updates.*.quantity', 'Cada actualización debe tener una cantidad válida')
+      .isInt({ min: 0 })
+      .toInt(),
+    checkValidationResult,
+  ],
+  bulkUpdateStock
+);
+
+// Rutas con parámetros (deben ir DESPUÉS de las rutas específicas)
+router.get('/:id', protect, getProductById);
+
 router.put(
   '/:id',
   [
@@ -48,7 +65,6 @@ router.put(
   updateProduct
 );
 
-// Rutas de actualización de stock
 router.put(
   '/:id/stock',
   [
@@ -57,20 +73,6 @@ router.put(
     checkValidationResult,
   ],
   updateProductStock
-);
-
-router.put(
-  '/bulk-stock',
-  [
-    protect,
-    check('updates', 'Se requiere un array de actualizaciones').isArray({ min: 1 }),
-    check('updates.*.id', 'Cada actualización debe tener un ID válido').isMongoId(),
-    check('updates.*.quantity', 'Cada actualización debe tener una cantidad válida')
-      .isInt({ min: 0 })
-      .toInt(),
-    checkValidationResult,
-  ],
-  bulkUpdateStock
 );
 
 module.exports = router;
