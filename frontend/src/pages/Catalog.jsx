@@ -1,18 +1,11 @@
 import React, { useState, useEffect, useMemo } from "react";
-import {
-  MdSync,
-  MdInventory,
-  MdEdit,
-  MdSearch,
-  MdFilterList,
-  MdCheckBox,
-  MdCheckBoxOutlineBlank,
-} from "react-icons/md";
+import { MdInventory, MdEdit, MdSearch, MdUpload } from "react-icons/md";
 import { productService } from "../services/api";
 import DataTable from "../components/common/DataTable";
 import Button from "../components/common/Button";
 import Input from "../components/common/Input";
 import BulkStockModal from "../components/catalog/BulkStockModal";
+import ImportExcelModal from "../components/catalog/ImportExcelModal";
 import ToastNotifier from "../components/common/ToastNotifier";
 import { formatCurrency, formatDateTime } from "../utils/formatters";
 import "./Catalog.css";
@@ -40,10 +33,13 @@ const Catalog = () => {
   const [showBulkStockModal, setShowBulkStockModal] = useState(false);
   const [bulkStockLoading, setBulkStockLoading] = useState(false);
 
+  // Estados de importación
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+
   // Estados de estadísticas y notificaciones
   const [stats, setStats] = useState(null);
   const [toast, setToast] = useState(null);
-  const [syncLoading, setSyncLoading] = useState(false);
 
   // Cargar datos inicial
   useEffect(() => {
@@ -100,71 +96,51 @@ const Catalog = () => {
     }
   };
 
-  // Función para sincronizar productos
-  const handleSync = async () => {
+  // Función para importar productos desde Excel
+  const handleImportProducts = async (file) => {
     try {
-      setSyncLoading(true);
-      showToast("Iniciando sincronización completa...", "info");
+      setImportLoading(true);
+      showToast("Importando productos desde Excel...", "info");
 
-      const results = await productService.syncProducts();
+      const results = await productService.importProducts(file);
 
-      if (results.results.created > 0 || results.results.updated > 0) {
+      if (results.results.errors.length > 0) {
         showToast(
-          `Sincronización completada: ${results.results.created} creados, ${results.results.updated} actualizados`,
-          "success"
-        );
-      } else {
-        showToast("Sincronización completada - No hay cambios", "info");
-      }
-
-      loadProducts();
-      loadStats();
-    } catch (error) {
-      console.error("Error syncing products:", error);
-      showToast(
-        "Error en la sincronización: " +
-          (error.response?.data?.message || error.message),
-        "error"
-      );
-    } finally {
-      setSyncLoading(false);
-    }
-  };
-
-  // Función para sincronizar status de productos
-  const handleSyncStatus = async () => {
-    try {
-      setSyncLoading(true);
-      showToast(
-        "Iniciando sincronización de status (esto puede tomar varios minutos)...",
-        "info"
-      );
-
-      const results = await productService.syncProductStatus();
-
-      if (results.results.productsUpdated > 0) {
-        showToast(
-          `Sincronización de status completada: ${results.results.productsUpdated} productos actualizados`,
-          "success"
-        );
-      } else {
-        showToast(
-          "Sincronización de status completada - No hay cambios",
+          `Importación parcial: ${results.results.processed} procesados, ${results.results.errors.length} errores`,
           "info"
         );
+      } else {
+        showToast(
+          `Importación exitosa: ${results.results.created} creados, ${results.results.updated} actualizados`,
+          "success"
+        );
       }
 
+      // Cerrar modal y recargar datos
+      setShowImportModal(false);
       loadProducts();
       loadStats();
+
+      // Mostrar información de sincronización de Amazon si está disponible
+      if (results.amazonSync) {
+        setTimeout(() => {
+          showToast(
+            `Sincronización Amazon: ${
+              results.amazonSync.created + results.amazonSync.updated
+            } productos sincronizados`,
+            "info"
+          );
+        }, 2000);
+      }
     } catch (error) {
-      console.error("Error syncing product status:", error);
+      console.error("Error importing products:", error);
       showToast(
-        "Error en la sincronización de status: " +
+        "Error importando productos: " +
           (error.response?.data?.message || error.message),
         "error"
       );
     } finally {
-      setSyncLoading(false);
+      setImportLoading(false);
     }
   };
 
@@ -239,57 +215,84 @@ const Catalog = () => {
   const columns = [
     {
       title: "SKU",
-      field: "sellerSku",
+      field: "erp_sku",
       width: "150px",
       render: (product) => (
         <div className="product-sku">
-          <strong>{product.sellerSku}</strong>
-          {product.asin && (
-            <div className="product-asin">ASIN: {product.asin}</div>
+          <strong>{product.erp_sku || product.amz_sellerSku}</strong>
+          {product.amz_asin && (
+            <div className="product-asin">ASIN: {product.amz_asin}</div>
           )}
         </div>
       ),
     },
     {
       title: "Producto",
-      field: "title",
+      field: "erp_name",
       render: (product) => (
         <div className="product-info">
-          <div className="product-title">{product.title}</div>
-          {product.brand && (
-            <div className="product-brand">{product.brand}</div>
+          <div className="product-title">
+            {product.erp_name || product.amz_title}
+          </div>
+          {(product.erp_manufacturer || product.amz_brand) && (
+            <div className="product-brand">
+              {product.erp_manufacturer || product.amz_brand}
+            </div>
           )}
         </div>
       ),
     },
     {
-      title: "Estado",
-      field: "status",
-      width: "120px",
+      title: "Coste",
+      field: "erp_cost",
+      width: "100px",
       render: (product) => (
-        <span className={`status-chip ${product.status.toLowerCase()}`}>
-          {product.status}
+        <span className="product-cost">
+          {product.erp_cost ? formatCurrency(product.erp_cost) : "-"}
         </span>
       ),
     },
     {
+      title: "Estado ERP",
+      field: "amz_status",
+      width: "120px",
+      render: (product) => {
+        const status =
+          product.amz_status ||
+          (product.erp_status === 0 ? "Active" : "Inactive");
+        return (
+          <span className={`status-chip ${status.toLowerCase()}`}>
+            {status}
+          </span>
+        );
+      },
+    },
+    {
       title: "Stock",
-      field: "quantity",
+      field: "stock",
       width: "100px",
       render: (product) => (
         <div className="stock-info">
-          <span className="stock-quantity">{product.quantity || 0}</span>
-          <span className="stock-channel">{product.fulfillmentChannel}</span>
+          <span className="stock-quantity">{product.amz_quantity || 0}</span>
+          {product.amz_fulfillmentChannel && (
+            <span className="stock-channel">
+              {product.amz_fulfillmentChannel}
+            </span>
+          )}
         </div>
       ),
     },
     {
-      title: "Precio",
+      title: "Precio WEB",
       field: "price",
       width: "120px",
       render: (product) => (
         <span className="product-price">
-          {product.price ? formatCurrency(product.price) : "-"}
+          {product.amz_price
+            ? formatCurrency(product.amz_price)
+            : product.erp_price
+            ? formatCurrency(product.erp_price)
+            : "-"}
         </span>
       ),
     },
@@ -300,7 +303,7 @@ const Catalog = () => {
       render: (product) => (
         <div className="update-info">
           <div>{formatDateTime(product.updatedAt)}</div>
-          {product.syncStatus === "error" && (
+          {product.amz_syncStatus === "error" && (
             <div className="sync-error">Error de sincronización</div>
           )}
         </div>
@@ -357,11 +360,10 @@ const Catalog = () => {
         <div className="catalog-actions">
           <Button
             variant="outlined"
-            icon={<MdSync />}
-            onClick={handleSync}
-            disabled={syncLoading}
+            icon={<MdUpload />}
+            onClick={() => setShowImportModal(true)}
           >
-            {syncLoading ? "Sincronizando..." : "Sincronizar"}
+            Importar Excel
           </Button>
           {selectedProducts.length > 0 && (
             <Button
@@ -463,6 +465,15 @@ const Catalog = () => {
           onClose={() => setShowBulkStockModal(false)}
           onUpdate={handleBulkStockUpdate}
           loading={bulkStockLoading}
+        />
+      )}
+
+      {/* Modal de importación de Excel */}
+      {showImportModal && (
+        <ImportExcelModal
+          onClose={() => setShowImportModal(false)}
+          onImport={handleImportProducts}
+          loading={importLoading}
         />
       )}
 

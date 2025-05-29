@@ -131,6 +131,25 @@ export const productService = {
     return response.data;
   },
 
+  // Importar productos desde Excel
+  importProducts: async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await api.post("/products/import", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      timeout: 300000, // 5 minutos timeout para importación
+    });
+    return response.data;
+  },
+
+  // Descargar plantilla de importación
+  downloadImportTemplate: () => {
+    window.open(`${baseURL}/products/import/template`, "_blank");
+  },
+
   // Sincronizar productos con Amazon
   syncProducts: async () => {
     const response = await api.post("/products/sync");
@@ -160,6 +179,7 @@ export const productService = {
     const response = await api.get("/products/available-reports");
     return response.data;
   },
+
   // Actualizar stock de un producto
   updateProductStock: async (id, quantity) => {
     const response = await api.put(`/products/${id}/stock`, { quantity });

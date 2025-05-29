@@ -1,6 +1,8 @@
 const spApiClient = require('./spApiClient');
 const Product = require('../../models/productModel');
 const logger = require('../../utils/logger').createLogger('amazonService');
+const path = require('path');
+const fs = require('fs');
 
 class AmazonService {
   constructor() {
@@ -345,57 +347,184 @@ class AmazonService {
   }
 
   /**
-   * Sincroniza productos con la base de datos local
+   * Sincroniza productos con la base de datos local (solo productos con ERP SKU coincidente)
    */
   async syncProductsWithDatabase() {
     try {
-      logger.info('Starting comprehensive product synchronization without FBA...');
+      logger.info('Starting comprehensive product synchronization...');
 
       const syncResults = {
         created: 0,
         updated: 0,
         errors: 0,
+        skipped: 0,
         sources: {
           listings: 0,
           statusReport: 0,
         },
+        unmatchedProducts: [],
       };
 
-      // 1. Obtener TODOS los listings (productos MFN)
+      // 1. Obtener productos ERP existentes para comparación
+      const erpProducts = await Product.find({}, 'erp_sku').lean();
+      const erpSkuSet = new Set(erpProducts.map((p) => p.erp_sku).filter((sku) => sku));
+
+      logger.info(`Found ${erpSkuSet.size} ERP products for matching`);
+
+      // 2. Obtener TODOS los listings de Amazon
       const allListings = await this.getAllListingsItems();
-      logger.info(`Processing ${allListings.length} listings`);
+      logger.info(`Processing ${allListings.length} Amazon listings`);
+
+      const unmatchedProducts = [];
 
       for (const listing of allListings) {
         try {
-          const productData = this.mapListingToProduct(listing);
-          const result = await this.upsertProduct(productData);
+          const amazonSku = listing.sku;
 
-          if (result.upserted) {
-            syncResults.created++;
+          // Solo procesar si el SKU de Amazon coincide con algún ERP SKU
+          if (erpSkuSet.has(amazonSku)) {
+            const productData = this.mapListingToProduct(listing);
+            const result = await this.upsertProductWithErpSku(productData, amazonSku);
+
+            if (result.created) {
+              syncResults.created++;
+            } else {
+              syncResults.updated++;
+            }
+            syncResults.sources.listings++;
           } else {
-            syncResults.updated++;
+            // Recopilar productos no coincidentes para CSV
+            const summary = listing.summaries?.[0] || {};
+            unmatchedProducts.push({
+              sku: amazonSku,
+              asin: summary.asin || '',
+              title: summary.itemName || listing.sku || 'Sin título',
+            });
+            syncResults.skipped++;
           }
-          syncResults.sources.listings++;
         } catch (error) {
           logger.error(`Error processing listing ${listing.sku}:`, error);
           syncResults.errors++;
         }
       }
 
-      // 2. Obtener y procesar reporte de listings para actualizar status (TODA NO IMPLEMETAR ESTA FUNCIONALIDAD)
-      // try {
-      //   await this.updateProductStatusFromReport();
-      //   syncResults.sources.statusReport++;
-      //   logger.info('Product status updated from merchant listings report');
-      // } catch (error) {
-      //   logger.error('Error updating status from report:', error);
-      //   // No falla toda la sincronización si el reporte falla
-      // }
+      // 3. Generar CSV con productos no coincidentes
+      if (unmatchedProducts.length > 0) {
+        await this.generateUnmatchedProductsCSV(unmatchedProducts);
+        syncResults.unmatchedProducts = unmatchedProducts;
+        logger.info(`Generated CSV with ${unmatchedProducts.length} unmatched products`);
+      }
 
-      logger.info('Product synchronization completed:', syncResults);
-      return syncResults;
+      logger.info('Product synchronization completed:', {
+        ...syncResults,
+        unmatchedProducts: syncResults.unmatchedProducts.length,
+      });
+
+      return {
+        ...syncResults,
+        unmatchedProductsCount: unmatchedProducts.length,
+      };
     } catch (error) {
       logger.error('Error in product synchronization:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Upsert de producto manteniendo datos ERP existentes
+   */
+  async upsertProductWithErpSku(amazonData, erpSku) {
+    try {
+      // Buscar producto existente por erp_sku
+      const existingProduct = await Product.findOne({ erp_sku: erpSku });
+
+      if (existingProduct) {
+        // Actualizar solo campos de Amazon, mantener datos ERP
+        const updateData = {};
+        Object.keys(amazonData).forEach((key) => {
+          if (key.startsWith('amz_')) {
+            updateData[key] = amazonData[key];
+          }
+        });
+
+        updateData.amz_lastSyncAt = new Date();
+        updateData.amz_syncStatus = 'synced';
+        updateData.amz_syncError = '';
+
+        const result = await Product.findByIdAndUpdate(existingProduct._id, updateData, {
+          new: true,
+        });
+
+        return { product: result, created: false };
+      } else {
+        // Crear nuevo producto con erp_sku
+        const newProductData = {
+          ...amazonData,
+          erp_sku: erpSku,
+          amz_lastSyncAt: new Date(),
+          amz_syncStatus: 'synced',
+          amz_syncError: '',
+        };
+
+        const result = await Product.create(newProductData);
+        return { product: result, created: true };
+      }
+    } catch (error) {
+      // Marcar producto con error
+      await Product.findOneAndUpdate(
+        { erp_sku: erpSku },
+        {
+          erp_sku: erpSku,
+          amz_sellerSku: amazonData.amz_sellerSku || '',
+          amz_asin: amazonData.amz_asin || '',
+          amz_title: amazonData.amz_title || erpSku,
+          amz_syncStatus: 'error',
+          amz_syncError: error.message,
+          amz_lastSyncAt: new Date(),
+        },
+        { upsert: true }
+      );
+
+      throw error;
+    }
+  }
+
+  /**
+   * Genera un archivo CSV con productos de Amazon no coincidentes
+   */
+  async generateUnmatchedProductsCSV(unmatchedProducts) {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const csvDir = path.join(__dirname, '../../../logs');
+
+      // Asegurar que el directorio existe
+      if (!fs.existsSync(csvDir)) {
+        fs.mkdirSync(csvDir, { recursive: true });
+      }
+
+      // Crear contenido CSV
+      const csvHeaders = 'SKU,ASIN,Titulo\n';
+      const csvRows = unmatchedProducts
+        .map(
+          (product) => `"${product.sku}","${product.asin}","${product.title.replace(/"/g, '""')}"`
+        )
+        .join('\n');
+
+      const csvContent = csvHeaders + csvRows;
+
+      // Generar nombre de archivo con timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `productos-amazon-no-coincidentes-${timestamp}.csv`;
+      const filepath = path.join(csvDir, filename);
+
+      // Escribir archivo
+      fs.writeFileSync(filepath, csvContent, 'utf8');
+
+      logger.info(`Unmatched products CSV generated: ${filepath}`);
+      return filepath;
+    } catch (error) {
+      logger.error('Error generating unmatched products CSV:', error);
       throw error;
     }
   }

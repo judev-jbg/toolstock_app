@@ -246,6 +246,17 @@
   justify-content: center;
 }
 
+.product-price {
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.product-cost {
+  font-weight: 600;
+  color: var(--success-color);
+  font-size: 0.9rem;
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
   .catalog-stats {

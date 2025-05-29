@@ -14,8 +14,10 @@ const {
   checkAmazonConfig,
   updateProduct,
 } = require('../controllers/productController');
+const { importProducts, getImportTemplate } = require('../controllers/importController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { checkValidationResult } = require('../middleware/validation');
+const { uploadExcel } = require('../middleware/excelMiddleware');
 
 const router = express.Router();
 
@@ -24,6 +26,16 @@ router.get('/', protect, getProducts);
 router.get('/brands', protect, getBrands);
 router.get('/stats', protect, getProductStats);
 router.get('/sync-needed', protect, getProductsNeedingSync);
+
+// Rutas de importación de productos
+router.get('/import/template', protect, authorize('admin', 'root'), getImportTemplate);
+router.post(
+  '/import',
+  protect,
+  authorize('admin', 'root'),
+  uploadExcel.single('file'),
+  importProducts
+);
 
 // Rutas de administración (requieren permisos de admin)
 router.post('/sync', protect, authorize('admin', 'root'), syncProducts);

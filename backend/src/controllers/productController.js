@@ -25,20 +25,48 @@ const getProducts = async (req, res) => {
     // Filtro de búsqueda por SKU, ASIN o título
     if (search) {
       filters.$or = [
-        { sellerSku: { $regex: search, $options: 'i' } },
-        { asin: { $regex: search, $options: 'i' } },
-        { title: { $regex: search, $options: 'i' } },
+        { erp_sku: { $regex: search, $options: 'i' } },
+        { amz_sellerSku: { $regex: search, $options: 'i' } },
+        { amz_asin: { $regex: search, $options: 'i' } },
+        { amz_title: { $regex: search, $options: 'i' } },
+        { erp_name: { $regex: search, $options: 'i' } },
       ];
     }
 
     // Filtro por marca
     if (brand && brand !== 'all') {
-      filters.brand = brand;
+      filters.$or = filters.$or
+        ? [...filters.$or, { erp_manufacturer: brand }, { amz_brand: brand }]
+        : [{ erp_manufacturer: brand }, { amz_brand: brand }];
     }
 
     // Filtro por estado
     if (status && status !== 'all') {
-      filters.status = status;
+      if (status === 'Active') {
+        filters.$or = filters.$or
+          ? [
+              ...filters.$or,
+              { amz_status: 'Active' },
+              { $and: [{ erp_status: 1 }, { amz_status: { $exists: false } }] },
+            ]
+          : [
+              { amz_status: 'Active' },
+              { $and: [{ erp_status: 1 }, { amz_status: { $exists: false } }] },
+            ];
+      } else if (status === 'Inactive') {
+        filters.$or = filters.$or
+          ? [
+              ...filters.$or,
+              { amz_status: 'Inactive' },
+              { $and: [{ erp_status: 0 }, { amz_status: { $exists: false } }] },
+            ]
+          : [
+              { amz_status: 'Inactive' },
+              { $and: [{ erp_status: 0 }, { amz_status: { $exists: false } }] },
+            ];
+      } else {
+        filters.amz_status = status;
+      }
     }
 
     // Configurar paginación
@@ -88,15 +116,16 @@ const getProducts = async (req, res) => {
  */
 const getBrands = async (req, res) => {
   try {
-    const brands = await Product.distinct('brand', {
-      brand: { $ne: '' },
-      brand: { $ne: null },
+    const erpbrands = await Product.distinct('erp_manufacturer', {
+      erp_manufacturer: { $ne: '' },
+      erp_manufacturer: { $ne: null },
     });
-    res.json(brands.sort());
+
+    res.json(erpbrands.sort());
   } catch (error) {
-    logger.error('Error getting brands:', error);
+    logger.error('Error getting manufacturer:', error);
     res.status(500).json({
-      message: 'Error obteniendo marcas',
+      message: 'Error obteniendo manufacturer',
       error: error.message,
     });
   }
@@ -171,13 +200,13 @@ const getProductById = async (req, res) => {
 };
 
 /**
- * @desc    Sincronizar productos con Amazon
+ * @desc    Sincronizar productos con Amazon (solo productos ERP existentes)
  * @route   POST /api/products/sync
  * @access  Private/Admin
  */
 const syncProducts = async (req, res) => {
   try {
-    logger.info('Starting manual product sync...');
+    logger.info('Starting manual product sync (ERP products only)...');
     const results = await amazonService.syncProductsWithDatabase();
 
     res.json({

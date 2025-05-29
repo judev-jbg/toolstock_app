@@ -10,17 +10,14 @@ const productSchema = new mongoose.Schema(
     },
     amz_asin: {
       type: String,
-      required: true,
       index: true,
     },
     amz_sellerSku: {
       type: String,
-      required: true,
       index: true,
     },
     amz_title: {
       type: String,
-      required: true,
     },
     amz_brand: {
       type: String,
