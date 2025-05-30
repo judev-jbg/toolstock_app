@@ -14,7 +14,6 @@ const Catalog = () => {
   // Estados principales
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   // Estados de filtros y búsqueda
   const [searchTerm, setSearchTerm] = useState("");
@@ -66,10 +65,8 @@ const Catalog = () => {
       setProducts(response.products);
       setTotalPages(response.pagination.totalPages);
       setTotalItems(response.pagination.totalItems);
-      setError(null);
     } catch (error) {
       console.error("Error loading products:", error);
-      setError("Error cargando productos");
       showToast("Error cargando productos", "error");
     } finally {
       setLoading(false);
@@ -182,7 +179,6 @@ const Catalog = () => {
   // Manejar cambio de página
   const handlePageChange = (page) => {
     setCurrentPage(page);
-    setSelectedProducts([]);
   };
 
   // Manejar cambio de búsqueda
@@ -365,18 +361,8 @@ const Catalog = () => {
           >
             Importar Excel
           </Button>
-          {selectedProducts.length > 0 && (
-            <Button
-              variant="filled"
-              icon={<MdInventory />}
-              onClick={() => setShowBulkStockModal(true)}
-            >
-              Actualizar Stock ({selectedProducts.length})
-            </Button>
-          )}
         </div>
       </div>
-
       {/* Estadísticas */}
       {stats && (
         <div className="catalog-stats">
@@ -398,7 +384,6 @@ const Catalog = () => {
           </div>
         </div>
       )}
-
       {/* Filtros */}
       <div className="catalog-filters">
         <div className="search-section">
@@ -424,7 +409,6 @@ const Catalog = () => {
           </select>
         </div>
       </div>
-
       {/* Chips de estado */}
       <div className="status-chips">
         {statusFilters.map((filter) => (
@@ -440,6 +424,34 @@ const Catalog = () => {
         ))}
       </div>
 
+      {selectedProducts.length > 0 && (
+        <div className="selection-feedback">
+          <div className="selection-info">
+            <span className="selection-count">
+              {selectedProducts.length} producto
+              {selectedProducts.length !== 1 ? "s" : ""} seleccionado
+              {selectedProducts.length !== 1 ? "s" : ""}
+            </span>
+            <button
+              className="clear-selection-btn"
+              onClick={() => setSelectedProducts([])}
+              title="Limpiar selección"
+            >
+              Limpiar selección
+            </button>
+          </div>
+          <div className="selection-actions">
+            <Button
+              variant="filled"
+              icon={<MdInventory />}
+              onClick={() => setShowBulkStockModal(true)}
+              size="small"
+            >
+              Actualizar Stock
+            </Button>
+          </div>
+        </div>
+      )}
       {/* Tabla de productos */}
       <DataTable
         data={products}
@@ -457,7 +469,6 @@ const Catalog = () => {
         onPageChange={handlePageChange}
         className="products-table"
       />
-
       {/* Modal de actualización masiva de stock */}
       {showBulkStockModal && (
         <BulkStockModal
@@ -467,7 +478,6 @@ const Catalog = () => {
           loading={bulkStockLoading}
         />
       )}
-
       {/* Modal de importación de Excel */}
       {showImportModal && (
         <ImportExcelModal
@@ -476,7 +486,6 @@ const Catalog = () => {
           loading={importLoading}
         />
       )}
-
       {/* Toast de notificaciones */}
       {toast && <ToastNotifier message={toast.message} type={toast.type} />}
     </div>

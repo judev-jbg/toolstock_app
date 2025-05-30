@@ -9,7 +9,7 @@ const { connectDB } = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 const productScheduler = require('./services/schedulers/productScheduler');
 
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'development') {
   productScheduler.init();
 }
 

@@ -21,6 +21,7 @@ const getProducts = async (req, res) => {
 
     // Construir filtros
     const filters = {};
+    filters.erp_skuSuplier = { $exists: true, $ne: '' };
 
     // Filtro de búsqueda por SKU, ASIN o título
     if (search) {
@@ -326,7 +327,7 @@ const bulkUpdateStock = async (req, res) => {
     const amazonUpdates = updates.map((update) => {
       const product = products.find((p) => p._id.toString() === update.id);
       return {
-        sellerSku: product.sellerSku,
+        sellerSku: product.amz_sellerSku,
         quantity: update.quantity,
       };
     });

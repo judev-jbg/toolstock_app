@@ -1,7 +1,7 @@
 .md-input-container {
   display: flex;
   flex-direction: column;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   position: relative;
 }
 
@@ -59,7 +59,7 @@
 
 .md-input-label.with-ico {
   position: absolute;
-  top: 50%;
+  top: 55%;
   left: 40px;
   transform: translateY(-50%);
   font-size: 1rem;
@@ -76,15 +76,15 @@
 
 .md-input-label.with-ico.active {
   color: var(--primary-color, #6200ee);
-  transform: translateY(-135%) scale(0.8);
-  -webkit-transform: translateY(-135%) scale(0.8);
-  -moz-transform: translateY(-135%) scale(0.8);
-  -ms-transform: translateY(-135%) scale(0.8);
-  -o-transform: translateY(-135%) scale(0.8);
+  transform: translateY(-140%) scale(0.8);
+  -webkit-transform: translateY(-140%) scale(0.8);
+  -moz-transform: translateY(-140%) scale(0.8);
+  -ms-transform: translateY(-140%) scale(0.8);
+  -o-transform: translateY(-140%) scale(0.8);
 }
 
 .md-input {
-  padding: 16px 12px;
+  padding-top: 8px;
   font-size: 1rem;
   width: 100%;
   background: transparent;
@@ -105,11 +105,20 @@
 .md-input-icon {
   position: absolute;
   left: 12px;
+  top: 45%;
   color: #666;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1;
+}
+
+.md-input-icon svg {
+  transform: scale(1.2);
+  -webkit-transform: scale(1.2);
+  -moz-transform: scale(1.2);
+  -ms-transform: scale(1.2);
+  -o-transform: scale(1.2);
 }
 
 .md-input-icon + .md-input {

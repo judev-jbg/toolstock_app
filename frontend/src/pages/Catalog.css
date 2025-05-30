@@ -73,7 +73,7 @@
   display: flex;
   gap: 1rem;
   margin-bottom: 1.5rem;
-  align-items: flex-end;
+  align-items: center;
   flex-wrap: wrap;
 }
 
@@ -326,6 +326,85 @@
   }
 
   .catalog-actions > * {
+    flex: 1;
+  }
+}
+
+/* Feedback de selección */
+.selection-feedback {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--primary-color);
+  color: var(--color-button);
+  padding: 1rem 1.5rem;
+  border-radius: 3px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  animation: slideDown 0.3s ease-out;
+}
+
+.selection-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.selection-count {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.clear-selection-btn {
+  background: none;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  color: var(--color-button);
+  padding: 0.25rem 0.75rem;
+  border-radius: 3px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clear-selection-btn:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
+.selection-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Animación para el feedback */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive para selection feedback */
+@media (max-width: 768px) {
+  .selection-feedback {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .selection-info {
+    justify-content: space-between;
+  }
+
+  .selection-actions {
+    width: 100%;
+  }
+
+  .selection-actions button {
     flex: 1;
   }
 }

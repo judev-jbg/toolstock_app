@@ -107,9 +107,9 @@ class AmazonService {
     const fulfillmentAvailability = listing.fulfillmentAvailability || [];
     const amz_asin = summary.asin;
     const amz_title = summary.itemName || attributes.item_name?.[0]?.value || listing.sku;
-    const amz_brand = attributes.manufacturer?.[0].value || attributes.brand?.[0].value;
-    const amz_price = offers[0].price.amount;
-    const amz_quantity = fulfillmentAvailability[0].quantity;
+    const amz_brand = attributes.manufacturer?.[0]?.value || attributes.brand?.[0]?.value || '';
+    const amz_price = offers?.[0]?.price?.amount || 0;
+    const amz_quantity = fulfillmentAvailability?.[0]?.quantity || 0;
     const amz_status = '';
     const amz_imageUrl =
       summary.mainImage?.link || attributes.main_product_image_locator?.[0]?.media_location || '';
@@ -135,7 +135,7 @@ class AmazonService {
       amz_productType: summary.productType || attributes.product_type || 'physical',
       amz_imageUrl,
       amz_amazonData: {
-        itemName: title,
+        itemName: amz_title,
         listingId: listing.listingId || '',
         productId: summary.productId || '',
         productType: summary.productType || '',
@@ -144,7 +144,7 @@ class AmazonService {
         listingStatus: summary.status || [],
         createdDate: summary.createdDate || '',
         lastUpdatedDate: summary.lastUpdatedDate || '',
-        mainImageUrl: imageUrl,
+        mainImageUrl: amz_imageUrl,
         manufacturer: attributes.manufacturer?.[0]?.value || '',
         ean:
           attributes.externally_assigned_product_identifier?.find((id) => id.type === 'ean')
@@ -851,12 +851,12 @@ class AmazonService {
 
       // Actualizar también en la base de datos local
       const localResult = await Product.findOneAndUpdate(
-        { sellerSku },
+        { erp_sku: sellerSku },
         {
-          quantity,
-          lastInventoryUpdate: new Date(),
-          syncStatus: 'synced',
-          syncError: '',
+          amz_quantity: quantity,
+          amz_lastInventoryUpdate: new Date(),
+          amz_syncStatus: 'synced',
+          amz_syncError: '',
         },
         { new: true }
       );

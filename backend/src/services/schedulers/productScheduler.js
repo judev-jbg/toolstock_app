@@ -1,6 +1,7 @@
 const schedule = require('node-schedule');
 const amazonService = require('../amazon/amazonService');
 const logger = require('../../utils/logger').createLogger('productScheduler');
+const Product = require('../../models/productModel');
 
 class ProductScheduler {
   constructor() {
@@ -11,13 +12,13 @@ class ProductScheduler {
    * Inicializa los trabajos programados
    */
   init() {
-    if (process.env.NODE_ENV !== 'production') {
+    if (process.env.NODE_ENV !== 'development') {
       logger.info('Scheduler disabled in development mode');
       return;
     }
-
-    this.scheduleProductSync();
-    this.scheduleHealthCheck();
+    this.scheduleMilwaukeeStockUpdates();
+    // this.scheduleProductSync();
+    // this.scheduleHealthCheck();
 
     logger.info('Product scheduler initialized');
   }
@@ -39,6 +40,166 @@ class ProductScheduler {
 
     this.jobs.set('productSync', job);
     logger.info('Product sync scheduled every 6 hours');
+  }
+
+  /**
+   * Programa las actualizaciones automáticas de stock para productos MILWAUKEE
+   */
+  scheduleMilwaukeeStockUpdates() {
+    // Tarea para ACTIVAR stock (Lunes a Viernes a las 17:00)
+    const activateStockJob = schedule.scheduleJob(
+      'milwaukee-activate-stock',
+      '0 17 * * 1-5',
+      async () => {
+        try {
+          logger.info('Starting scheduled MILWAUKEE stock activation (stock = 10)...');
+          await this.updateMilwaukeeStock(10, 'activate');
+          logger.info('MILWAUKEE stock activation completed successfully');
+        } catch (error) {
+          logger.error('Error in scheduled MILWAUKEE stock activation:', error);
+        }
+      }
+    );
+
+    // Tarea para DESACTIVAR stock (Lunes a Viernes a las 05:00)
+    const deactivateStockJob = schedule.scheduleJob(
+      'milwaukee-deactivate-stock',
+      '0 5 * * 1-5',
+      async () => {
+        try {
+          logger.info('Starting scheduled MILWAUKEE stock deactivation (stock = 0)...');
+          await this.updateMilwaukeeStock(0, 'deactivate');
+          logger.info('MILWAUKEE stock deactivation completed successfully');
+        } catch (error) {
+          logger.error('Error in scheduled MILWAUKEE stock deactivation:', error);
+        }
+      }
+    );
+
+    this.jobs.set('milwaukee-activate-stock', activateStockJob);
+    this.jobs.set('milwaukee-deactivate-stock', deactivateStockJob);
+
+    logger.info('MILWAUKEE stock update schedules initialized:');
+    logger.info('- Activate stock (10): Monday-Friday at 17:00');
+    logger.info('- Deactivate stock (0): Monday-Friday at 05:00');
+  }
+
+  /**
+   * Actualiza el stock de productos MILWAUKEE
+   * @param {number} quantity - Cantidad de stock a establecer
+   * @param {string} action - 'activate' o 'deactivate' para logging
+   */
+  async updateMilwaukeeStock(quantity, action) {
+    try {
+      // Buscar productos MILWAUKEE con ASIN válido Y sellerSku válido
+      const milwaukeeProducts = await Product.find({
+        erp_manufacturer: 'MILWAUKEE',
+        amz_asin: { $ne: '', $exists: true, $ne: null },
+        amz_sellerSku: { $ne: '', $exists: true, $ne: null }, // Asegurar que tenga SKU de Amazon
+      }).select('_id erp_sku amz_sellerSku amz_asin erp_name amz_quantity');
+
+      if (milwaukeeProducts.length === 0) {
+        logger.info('No MILWAUKEE products found with valid ASIN and Amazon SKU');
+        return;
+      }
+
+      logger.info(`Found ${milwaukeeProducts.length} MILWAUKEE products to ${action}`);
+
+      // Preparar actualizaciones directamente para Amazon
+      const amazonUpdates = milwaukeeProducts.map((product) => ({
+        sellerSku: product.amz_sellerSku,
+        quantity: quantity,
+      }));
+
+      // Usar directamente el servicio de Amazon
+      const amazonService = require('../amazon/amazonService');
+      const results = await amazonService.bulkUpdateInventory(amazonUpdates);
+
+      // Log de resultados
+      logger.info(`MILWAUKEE stock ${action} results:`, {
+        total: amazonUpdates.length,
+        successful: results.success.length,
+        failed: results.errors.length,
+      });
+
+      if (results.errors.length > 0) {
+        logger.warn(`${results.errors.length} MILWAUKEE products failed to update in Amazon`);
+        results.errors.forEach((error) => {
+          logger.warn(`Failed SKU ${error.sellerSku}: ${error.error}`);
+        });
+      }
+
+      // Actualizar la base de datos local para los productos exitosos
+      if (results.success.length > 0) {
+        const successfulSkus = results.success.map((s) => s.sellerSku);
+
+        const updateResult = await Product.updateMany(
+          {
+            amz_sellerSku: { $in: successfulSkus },
+            erp_manufacturer: 'MILWAUKEE',
+          },
+          {
+            amz_quantity: quantity,
+            amz_lastInventoryUpdate: new Date(),
+            amz_syncStatus: 'synced',
+            amz_syncError: '',
+          }
+        );
+
+        logger.info(`Updated ${updateResult.modifiedCount} products in local database`);
+      }
+
+      // Actualizar productos con errores en la base de datos
+      if (results.errors.length > 0) {
+        const errorSkus = results.errors.map((e) => e.sellerSku);
+
+        await Product.updateMany(
+          {
+            amz_sellerSku: { $in: errorSkus },
+            erp_manufacturer: 'MILWAUKEE',
+          },
+          {
+            amz_syncStatus: 'error',
+            amz_syncError: 'Error en actualización automática de stock',
+            amz_lastInventoryUpdate: new Date(),
+          }
+        );
+      }
+
+      // Log resumen
+      const productsSummary = milwaukeeProducts.slice(0, 5).map((p) => ({
+        sku: p.amz_sellerSku,
+        name: p.erp_name ? p.erp_name.substring(0, 30) + '...' : 'Sin nombre',
+        previousStock: p.amz_quantity || 0,
+        newStock: quantity,
+      }));
+
+      logger.info(`MILWAUKEE ${action} summary (first 5 products):`, productsSummary);
+
+      if (milwaukeeProducts.length > 5) {
+        logger.info(`... and ${milwaukeeProducts.length - 5} more products`);
+      }
+
+      return {
+        total: amazonUpdates.length,
+        successful: results.success.length,
+        failed: results.errors.length,
+        details: results,
+      };
+    } catch (error) {
+      logger.error(`Error updating MILWAUKEE stock (${action}):`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Ejecuta manualmente la actualización de stock MILWAUKEE (para testing)
+   * @param {string} action - 'activate' (stock=10) o 'deactivate' (stock=0)
+   */
+  async forceMilwaukeeStockUpdate(action) {
+    const quantity = action === 'activate' ? 10 : 0;
+    logger.info(`Forcing MILWAUKEE stock ${action} (quantity: ${quantity})...`);
+    return await this.updateMilwaukeeStock(quantity, action);
   }
 
   /**
@@ -97,8 +258,12 @@ class ProductScheduler {
    */
   cancelAllJobs() {
     for (const [name, job] of this.jobs) {
-      job.cancel();
-      logger.info(`Job ${name} cancelled`);
+      try {
+        job.cancel();
+        logger.info(`Job ${name} cancelled`);
+      } catch (error) {
+        logger.error(`Error cancelling job ${name}:`, error);
+      }
     }
     this.jobs.clear();
     logger.info('All scheduled jobs cancelled');
@@ -110,10 +275,37 @@ class ProductScheduler {
   getJobsStatus() {
     const status = {};
     for (const [name, job] of this.jobs) {
-      status[name] = {
-        active: job.pendingInvocations().length > 0,
-        nextInvocation: job.nextInvocation(),
-      };
+      try {
+        // pendingInvocations es una propiedad, no una función
+        const pendingInvocations = job.pendingInvocations || [];
+
+        // nextInvocation es una función que necesita ser llamada
+        let nextInvocation = null;
+        try {
+          nextInvocation =
+            typeof job.nextInvocation === 'function' ? job.nextInvocation() : job.nextInvocation;
+        } catch (error) {
+          logger.warn(`Error getting next invocation for job ${name}:`, error.message);
+        }
+
+        status[name] = {
+          active: Array.isArray(pendingInvocations) ? pendingInvocations.length > 0 : false,
+          nextInvocation: nextInvocation,
+          rule: job.rule || 'No rule defined',
+          running: job.running || false,
+          name: job.name || name,
+        };
+      } catch (error) {
+        logger.error(`Error getting status for job ${name}:`, error);
+        status[name] = {
+          active: false,
+          nextInvocation: null,
+          rule: 'Error getting status',
+          running: false,
+          name: name,
+          error: error.message,
+        };
+      }
     }
     return status;
   }
@@ -129,9 +321,42 @@ class ProductScheduler {
       case 'healthCheck':
         logger.info('Forcing health check...');
         return await amazonService.checkSyncNeeded();
+      case 'milwaukee-activate':
+        logger.info('Forcing MILWAUKEE stock activation...');
+        return await this.forceMilwaukeeStockUpdate('activate');
+      case 'milwaukee-deactivate':
+        logger.info('Forcing MILWAUKEE stock deactivation...');
+        return await this.forceMilwaukeeStockUpdate('deactivate');
       default:
         throw new Error(`Unknown job: ${jobName}`);
     }
+  }
+
+  /**
+   * Debug: Mostrar información detallada de los jobs
+   */
+  debugJobs() {
+    logger.info('=== JOB DEBUG INFO ===');
+    for (const [name, job] of this.jobs) {
+      logger.info(`Job: ${name}`);
+      logger.info(`  Type: ${typeof job}`);
+      logger.info(`  Constructor: ${job ? job.constructor.name : 'null'}`);
+      logger.info(`  Keys: ${job ? Object.keys(job) : 'none'}`);
+      if (job && job.nextInvocation) {
+        logger.info(`  Next invocation type: ${typeof job.nextInvocation}`);
+        if (typeof job.nextInvocation === 'function') {
+          try {
+            logger.info(`  Next invocation: ${job.nextInvocation()}`);
+          } catch (e) {
+            logger.info(`  Next invocation error: ${e.message}`);
+          }
+        } else {
+          logger.info(`  Next invocation value: ${job.nextInvocation}`);
+        }
+      }
+      logger.info('---');
+    }
+    logger.info('=== END DEBUG INFO ===');
   }
 }
 
