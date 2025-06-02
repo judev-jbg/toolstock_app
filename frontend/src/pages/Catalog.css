@@ -132,10 +132,18 @@
 
 /* Tabla de productos */
 .products-table {
-  background-color: var(--background-card);
+  background-color: var(--background-input);
   border-radius: 3px;
   overflow: hidden;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.products-table td span {
+  color: var(--text-light);
+}
+
+.update-info {
+  color: var(--text-light);
 }
 
 /* Celdas de productos */
@@ -407,4 +415,8 @@
   .selection-actions button {
     flex: 1;
   }
+}
+
+.products-table td .md-button-icon {
+  color: var(--primary-color, #6200ee);
 }

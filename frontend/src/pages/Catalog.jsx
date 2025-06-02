@@ -264,7 +264,7 @@ const Catalog = () => {
       },
     },
     {
-      title: "Stock",
+      title: "Stock AMZ",
       field: "stock",
       width: "100px",
       render: (product) => (
@@ -350,7 +350,6 @@ const Catalog = () => {
       {/* Header */}
       <div className="catalog-header">
         <div className="catalog-title">
-          <MdInventory />
           <h1>Catálogo de Productos</h1>
         </div>
         <div className="catalog-actions">
@@ -363,27 +362,7 @@ const Catalog = () => {
           </Button>
         </div>
       </div>
-      {/* Estadísticas */}
-      {stats && (
-        <div className="catalog-stats">
-          <div className="stat-card">
-            <div className="stat-value">{stats.total}</div>
-            <div className="stat-label">Total productos</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{stats.byStatus.Active || 0}</div>
-            <div className="stat-label">Activos</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{stats.byStatus.Inactive || 0}</div>
-            <div className="stat-label">Inactivos</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{stats.byStatus.Incomplete || 0}</div>
-            <div className="stat-label">Incompletos</div>
-          </div>
-        </div>
-      )}
+
       {/* Filtros */}
       <div className="catalog-filters">
         <div className="search-section">
