@@ -138,6 +138,82 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+
+    // Campos auxiliares para cálculo de PVPM
+    pricing: {
+      // Campos auxiliares (prevalecen sobre valores por defecto si están definidos)
+      customCost: {
+        type: Number,
+        default: null, // Si es null, usar erp_cost
+      },
+      customMargin: {
+        type: Number,
+        default: null, // Si es null, usar margen por defecto (0.75)
+        min: 0.1,
+        max: 0.9,
+      },
+      customShippingCost: {
+        type: Number,
+        default: null, // Si es null, calcular por peso
+      },
+
+      // Campos calculados
+      pvpm: {
+        type: Number,
+        default: 0,
+      },
+
+      // Configuración de precios de competencia
+      competitorPrice: {
+        type: Number,
+        default: null,
+      },
+      competitorPriceUpdatedAt: {
+        type: Date,
+        default: null,
+      },
+
+      fixedPrice: {
+        type: Number,
+        default: null, // Si es null, usar PVPM/competencia; si tiene valor, prevalece
+      },
+      fixedPriceReason: {
+        type: String,
+        default: '', // Razón comercial del precio fijo
+      },
+      fixedPriceSetAt: {
+        type: Date,
+        default: null, // Cuándo se estableció el precio fijo
+      },
+      fixedPriceSetBy: {
+        type: String,
+        default: '', // Quién estableció el precio fijo
+      },
+
+      // Historial de cambios
+      priceHistory: [
+        {
+          previousPrice: Number,
+          newPrice: Number,
+          reason: String, // 'pvpm_change', 'competitor_price', 'manual'
+          changedAt: {
+            type: Date,
+            default: Date.now,
+          },
+          changedBy: String, // 'system' o userId
+        },
+      ],
+
+      // Control de actualizaciones automáticas
+      autoUpdateEnabled: {
+        type: Boolean,
+        default: true,
+      },
+      lastPriceUpdate: {
+        type: Date,
+        default: null,
+      },
+    },
   },
   {
     timestamps: true,

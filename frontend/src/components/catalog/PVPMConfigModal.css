@@ -1,0 +1,201 @@
+.pvpm-config-modal {
+  background-color: var(--background-card);
+  border-radius: 3px;
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+}
+
+.pvpm-config-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--background-header-table);
+}
+
+.pvpm-config-modal .modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modal-content {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Configuración global */
+.global-config {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background-color: var(--background-input);
+  border-radius: 3px;
+  border: 1px solid var(--border-color);
+}
+
+.config-section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+/* Tabla de costes de envío */
+.shipping-table {
+  margin-bottom: 2rem;
+}
+
+.shipping-table-container {
+  background-color: var(--background-input);
+  border-radius: 3px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.shipping-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.shipping-table th,
+.shipping-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.shipping-table th {
+  background-color: var(--background-header-table);
+  font-weight: 600;
+}
+
+.shipping-table tr:last-child td {
+  border-bottom: none;
+}
+
+.shipping-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.shipping-row input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  background-color: var(--background-dark);
+  color: var(--text-light);
+}
+
+.remove-shipping-btn {
+  background: var(--danger-color);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.add-shipping-btn {
+  margin-top: 1rem;
+  width: 100%;
+}
+
+/* Configuración de competencia */
+.competitor-config {
+  padding: 1.5rem;
+  background-color: var(--background-input);
+  border-radius: 3px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 2rem;
+}
+
+/* Vista previa de cálculo */
+.pvpm-preview {
+  padding: 1.5rem;
+  background-color: rgba(255, 195, 144, 0.1);
+  border-left: 3px solid var(--primary-color);
+  border-radius: 3px;
+  margin-bottom: 2rem;
+}
+
+.preview-calculation {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.calculation-step {
+  background-color: var(--background-dark);
+  padding: 1rem;
+  border-radius: 3px;
+  text-align: center;
+  border: 1px solid var(--border-color);
+}
+
+.calculation-label {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 0.5rem;
+}
+
+.calculation-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.pvpm-result {
+  background-color: var(--primary-color);
+  color: var(--color-button);
+}
+
+.pvpm-result .calculation-value {
+  color: var(--color-button);
+  font-size: 1.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .pvpm-config-modal {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .config-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-calculation {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+  }
+}

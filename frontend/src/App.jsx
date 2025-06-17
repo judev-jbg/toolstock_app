@@ -16,6 +16,9 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
+import CatalogPendingActions from "./pages/CatalogPendingActions";
+import CatalogPriceHistory from "./pages/CatalogPriceHistory";
+import CatalogPricingDashboard from "./pages/CatalogPricingDashboard";
 
 // Componente para rutas protegidas
 const ProtectedRoute = ({ children }) => {
@@ -85,6 +88,39 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <MainLayout>
               <Catalog />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/catalog/pending-actions"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <CatalogPendingActions />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/catalog/pricing-dashboard"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <CatalogPricingDashboard />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/catalog/price-history"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <CatalogPriceHistory />
             </MainLayout>
           </ProtectedRoute>
         }

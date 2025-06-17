@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { MdInventory, MdEdit, MdSearch, MdUpload } from "react-icons/md";
+import {
+  MdInventory,
+  MdEdit,
+  MdSearch,
+  MdUpload,
+  MdDashboard,
+} from "react-icons/md";
 import { productService } from "../services/api";
 import DataTable from "../components/common/DataTable";
 import Button from "../components/common/Button";
@@ -8,9 +14,17 @@ import BulkStockModal from "../components/catalog/BulkStockModal";
 import ImportExcelModal from "../components/catalog/ImportExcelModal";
 import ToastNotifier from "../components/common/ToastNotifier";
 import { formatCurrency, formatDateTime } from "../utils/formatters";
+import PVPMConfigModal from "../components/catalog/PVPMConfigModal";
+import { MdSettings, MdWarning, MdHistory } from "react-icons/md";
+import { pricingService } from "../services/api";
+import { useNavigate } from "react-router-dom";
+import ProductPricingModal from "../components/catalog/ProductPricingModal";
 import "./Catalog.css";
 
 const Catalog = () => {
+  const navigate = useNavigate();
+  const [showProductPricingModal, setShowProductPricingModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   // Estados principales
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,11 +54,16 @@ const Catalog = () => {
   const [stats, setStats] = useState(null);
   const [toast, setToast] = useState(null);
 
+  // Estados de precios
+  const [showPVPMConfigModal, setShowPVPMConfigModal] = useState(false);
+  const [pendingActionsCount, setPendingActionsCount] = useState(0);
+
   // Cargar datos inicial
   useEffect(() => {
     loadProducts();
     loadBrands();
     loadStats();
+    loadPendingActions();
   }, [currentPage, searchTerm, selectedBrand, selectedStatus]);
 
   // Función para cargar productos
@@ -90,6 +109,20 @@ const Catalog = () => {
       setStats(statsData);
     } catch (error) {
       console.error("Error loading stats:", error);
+    }
+  };
+
+  // Función para cargar acciones pendientes de precios
+  const loadPendingActions = async () => {
+    try {
+      const data = await pricingService.getPendingActions();
+      const total = Object.values(data.pendingActions).reduce(
+        (sum, action) => sum + action.count,
+        0
+      );
+      setPendingActionsCount(total);
+    } catch (error) {
+      console.error("Error loading pending actions:", error);
     }
   };
 
@@ -168,6 +201,15 @@ const Catalog = () => {
     } finally {
       setBulkStockLoading(false);
     }
+  };
+
+  // Función para actualizar configuración de PVPM
+  const handlePVPMConfigUpdate = () => {
+    setShowPVPMConfigModal(false);
+    loadProducts();
+    loadStats();
+    loadPendingActions();
+    showToast("Configuración de PVPM actualizada", "success");
   };
 
   // Función para mostrar toast
@@ -265,7 +307,7 @@ const Catalog = () => {
     },
     {
       title: "Stock AMZ",
-      field: "stock",
+      field: "stock-amz",
       width: "100px",
       render: (product) => (
         <div className="stock-info">
@@ -280,16 +322,37 @@ const Catalog = () => {
     },
     {
       title: "Precio WEB",
-      field: "price",
+      field: "erp_price",
       width: "120px",
       render: (product) => (
         <span className="product-price">
-          {product.amz_price
-            ? formatCurrency(product.amz_price)
-            : product.erp_price
-            ? formatCurrency(product.erp_price)
-            : "-"}
+          {product.erp_price ? formatCurrency(product.erp_price * 1.21) : "-"}
         </span>
+      ),
+    },
+    {
+      title: "Precio AMZ",
+      field: "amz_price",
+      width: "120px",
+      render: (product) => (
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
+        >
+          <span className="product-price">
+            {product.amz_price ? formatCurrency(product.amz_price) : "-"}
+          </span>
+          {product.pricing?.fixedPrice > 0 && (
+            <span
+              style={{
+                fontSize: "0.75rem",
+                color: "var(--warning-color)",
+                fontWeight: "600",
+              }}
+            >
+              FIJO
+            </span>
+          )}
+        </div>
       ),
     },
     {
@@ -325,8 +388,15 @@ const Catalog = () => {
 
   // Función placeholder para editar producto
   const handleEditProduct = (product) => {
-    console.log("Edit product:", product);
-    // TODO: Implementar modal de edición
+    setSelectedProduct(product);
+    setShowProductPricingModal(true);
+  };
+
+  const handleProductPricingUpdate = () => {
+    setShowProductPricingModal(false);
+    setSelectedProduct(null);
+    loadProducts();
+    showToast("Configuración de producto actualizada", "success");
   };
 
   // Filtros de estado
@@ -355,10 +425,48 @@ const Catalog = () => {
         <div className="catalog-actions">
           <Button
             variant="outlined"
+            icon={<MdWarning />}
+            onClick={() => navigate("/catalog/pending-actions")}
+            style={
+              pendingActionsCount > 0
+                ? {
+                    backgroundColor: "var(--warning-color)",
+                    color: "white",
+                    borderColor: "var(--warning-color)",
+                  }
+                : {}
+            }
+          >
+            Acciones Pendientes
+            {pendingActionsCount > 0 && `(${pendingActionsCount})`}
+          </Button>
+          <Button
+            variant="outlined"
+            icon={<MdDashboard />}
+            onClick={() => navigate("/catalog/pricing-dashboard")}
+          >
+            Dashboard Pricing
+          </Button>
+          <Button
+            variant="outlined"
             icon={<MdUpload />}
             onClick={() => setShowImportModal(true)}
           >
             Importar Excel
+          </Button>
+          <Button
+            variant="outlined"
+            icon={<MdHistory />}
+            onClick={() => navigate("/catalog/price-history")}
+          >
+            Historial
+          </Button>
+          <Button
+            variant="outlined"
+            icon={<MdSettings />}
+            onClick={() => setShowPVPMConfigModal(true)}
+          >
+            Config. PVPM
           </Button>
         </div>
       </div>
@@ -463,6 +571,21 @@ const Catalog = () => {
           onClose={() => setShowImportModal(false)}
           onImport={handleImportProducts}
           loading={importLoading}
+        />
+      )}
+      {/* Modal de configuracion PVPM */}
+      {showPVPMConfigModal && (
+        <PVPMConfigModal
+          onClose={() => setShowPVPMConfigModal(false)}
+          onUpdate={handlePVPMConfigUpdate}
+        />
+      )}
+      {/* Modal de configuración de producto */}
+      {showProductPricingModal && selectedProduct && (
+        <ProductPricingModal
+          product={selectedProduct}
+          onClose={() => setShowProductPricingModal(false)}
+          onUpdate={handleProductPricingUpdate}
         />
       )}
       {/* Toast de notificaciones */}

@@ -8,9 +8,11 @@ const fs = require('fs');
 const { connectDB } = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 const productScheduler = require('./services/schedulers/productScheduler');
+const pricingScheduler = require('./services/schedulers/pricingScheduler');
 
 if (process.env.NODE_ENV === 'development') {
   productScheduler.init();
+  // pricingScheduler.init();
 }
 
 // Inicializar Express
@@ -37,6 +39,8 @@ connectDB();
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/uploads/avatars', express.static(path.join(__dirname, '../uploads/avatars')));
+app.use('/api/pricing', require('./routes/pricingRoutes'));
+app.use('/api/webhooks', require('./routes/webhookRoutes'));
 
 // Ruta raíz
 app.get('/', (req, res) => {

@@ -12,10 +12,6 @@ class ProductScheduler {
    * Inicializa los trabajos programados
    */
   init() {
-    if (process.env.NODE_ENV !== 'development') {
-      logger.info('Scheduler disabled in development mode');
-      return;
-    }
     this.scheduleMilwaukeeStockUpdates();
     // this.scheduleProductSync();
     // this.scheduleHealthCheck();
@@ -46,10 +42,10 @@ class ProductScheduler {
    * Programa las actualizaciones automáticas de stock para productos MILWAUKEE
    */
   scheduleMilwaukeeStockUpdates() {
-    // Tarea para ACTIVAR stock (Lunes a Viernes a las 17:00)
+    // Tarea para ACTIVAR stock (Lunes a Viernes (1-5) a las 17:00) | Solo los Viernes (5) a las 17:00
     const activateStockJob = schedule.scheduleJob(
       'milwaukee-activate-stock',
-      '0 17 * * 1-5',
+      '0 17 * * 5',
       async () => {
         try {
           logger.info('Starting scheduled MILWAUKEE stock activation (stock = 10)...');
@@ -61,10 +57,10 @@ class ProductScheduler {
       }
     );
 
-    // Tarea para DESACTIVAR stock (Lunes a Viernes a las 05:00)
+    // Tarea para DESACTIVAR stock (Lunes a Viernes (1-5) a las 05:00 | Solo los Lunes (1) a las 05:00 )
     const deactivateStockJob = schedule.scheduleJob(
       'milwaukee-deactivate-stock',
-      '0 5 * * 1-5',
+      '0 5 * * 1',
       async () => {
         try {
           logger.info('Starting scheduled MILWAUKEE stock deactivation (stock = 0)...');
