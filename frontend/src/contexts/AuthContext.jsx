@@ -11,6 +11,18 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Roles y permisos
+  const hasRole = (requiredRoles) => {
+    if (!user?.role) return false;
+    if (Array.isArray(requiredRoles)) {
+      return requiredRoles.includes(user.role);
+    }
+    return user.role === requiredRoles;
+  };
+
+  const isRoot = () => hasRole("root");
+  const isAdmin = () => hasRole(["admin", "root"]);
+
   // Configurar axios para incluir el token en las solicitudes
   useEffect(() => {
     if (token) {
@@ -42,6 +54,7 @@ export const AuthProvider = ({ children }) => {
           try {
             const response = await authService.getProfile();
             setUser(response);
+            setError(null);
           } catch (profileError) {
             console.error("Error al obtener perfil:", profileError);
             logout();
@@ -71,8 +84,6 @@ export const AuthProvider = ({ children }) => {
 
       const response = await authService.login(email, password);
 
-      console.log(response);
-
       if (response && response.token) {
         // Guardar token en localStorage
         localStorage.setItem("token", response.token);
@@ -83,18 +94,20 @@ export const AuthProvider = ({ children }) => {
           "Authorization"
         ] = `Bearer ${response.token}`;
 
-        return true;
+        return { success: true };
       } else {
         setError("Credenciales inválidas");
-        return false;
+        return { success: false, error: "Credenciales inválidas" };
       }
     } catch (error) {
       console.error("Error de inicio de sesión:", error);
-      setError(error.response?.data?.message || "Error de inicio de sesión");
+      const errorMessage =
+        error.response?.data?.message || "Error de inicio de sesión";
+      setError(errorMessage);
       setUser(null);
       setToken(null);
       localStorage.removeItem("token");
-      return false;
+      return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
@@ -103,14 +116,11 @@ export const AuthProvider = ({ children }) => {
   // Cerrar sesión
   const logout = () => {
     try {
-      // Opcional: notificar al backend sobre el logout
-      // await authService.logout();
-
       // Limpiar estado local
       localStorage.removeItem("token");
       setToken(null);
       setUser(null);
-
+      setError(null);
       // Limpiar headers de axios
       delete axios.defaults.headers.common["Authorization"];
 
@@ -157,6 +167,9 @@ export const AuthProvider = ({ children }) => {
         logout,
         updateProfile,
         setError,
+        hasRole,
+        isRoot,
+        isAdmin,
       }}
     >
       {children}
