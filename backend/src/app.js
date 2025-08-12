@@ -35,8 +35,9 @@ connectDB();
 
 // Rutas
 app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/products', require('./routes/productRoutes'));
 app.use('/uploads/avatars', express.static(path.join(__dirname, '../uploads/avatars')));
+app.use('/api/products', require('./routes/productRoutes'));
+app.use('/api/pricing', require('./routes/pricingRoutes'));
 
 // Ruta raíz
 app.get('/', (req, res) => {

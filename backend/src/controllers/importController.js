@@ -1,4 +1,3 @@
-// backend/src/controllers/importController.js
 const XLSX = require('xlsx');
 const Product = require('../models/productModel');
 const amazonService = require('../services/amazon/amazonService');
