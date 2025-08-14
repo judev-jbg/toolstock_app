@@ -10,10 +10,13 @@ const path = require('path');
 const { connectDB } = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 const productScheduler = require('./services/schedulers/productScheduler');
+const notificationScheduler = require('./services/schedulers/notificationScheduler');
 
 if (process.env.NODE_ENV === 'development') {
   logger.info(`Iniciando en modo ${process.env.NODE_ENV}`);
   productScheduler.init();
+  notificationScheduler.init();
+  notificationScheduler.startJobs();
 }
 
 // Inicializar Express
@@ -44,6 +47,7 @@ app.use('/api/pricing', require('./routes/pricingRoutes'));
 app.use('/api/actions', require('./routes/actionsRoutes'));
 app.use('/api/history', require('./routes/historyRoutes'));
 app.use('/api/pricing-engine', require('./routes/pricingEngineRoutes'));
+app.use('/api/notifications', require('./routes/notificationsRoutes'));
 
 // Ruta raíz
 app.get('/', (req, res) => {
