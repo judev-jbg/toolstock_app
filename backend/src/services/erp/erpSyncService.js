@@ -58,7 +58,7 @@ class ErpSyncService {
             erp_sku: erpProduct.erp_sku,
             error: error.message,
           });
-          logger.error(`Error syncing product ${erpProduct.erp_sku}:`, error);
+          logger.error(`Error syncing product ${erpProduct.erp_sku}:`, error.message);
         }
       }
 
@@ -182,6 +182,7 @@ class ErpSyncService {
       erp_cost: erpProduct.erp_cost || 0,
       erp_barcode: erpProduct.erp_barcode || '',
       erp_obs: erpProduct.erp_obs || '',
+      erp_offer_web: erpProduct.erp_offer_web || 0,
       erp_status: erpProduct.erp_status || 0,
       erp_weight: erpProduct.erp_weight || 0,
       erp_length: erpProduct.erp_length || 0,
@@ -218,6 +219,7 @@ class ErpSyncService {
       erp_cost: erpProduct.erp_cost || 0,
       erp_barcode: erpProduct.erp_barcode || '',
       erp_obs: erpProduct.erp_obs || '',
+      erp_offer_web: erpProduct.erp_offer_web || 0,
       erp_status: erpProduct.erp_status || 0,
       erp_weight: erpProduct.erp_weight || 0,
       erp_length: erpProduct.erp_length || 0,

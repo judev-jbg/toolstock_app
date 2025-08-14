@@ -34,7 +34,6 @@ const productSchema = new mongoose.Schema(
     },
     erp_offer_web: {
       type: Number,
-      index: true,
     },
     erp_status: {
       type: Number,

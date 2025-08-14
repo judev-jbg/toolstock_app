@@ -112,8 +112,8 @@ class PricingEngine {
         buyboxPrice: product.pricing?.competitorData?.buyboxPrice || null,
 
         // Web offer status
-        isWebOffer: product.erp_obs === 'OFERTA WEB',
-        webPrice: product.erp_price ? product.erp_price * 1.21 : 0,
+        isWebOffer: product.erp_offer_web === 1,
+        webPrice: product.erp_price_web_official ? product.erp_price_web_official * 1.21 : 0,
 
         // Configuration
         config: config,
@@ -414,6 +414,9 @@ class PricingEngine {
             message: `Amazon (${decision.finalPrice.toFixed(2)}€) más barato que web (${context.webPrice.toFixed(2)}€). Web debería costar máximo ${requiredWebPrice.toFixed(2)}€`,
             severity: 'critical',
           });
+          validation.checks.marginCheck = false;
+        } else {
+          validation.checks.marginCheck = true;
         }
       }
 
