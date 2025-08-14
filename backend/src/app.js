@@ -43,6 +43,7 @@ app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/pricing', require('./routes/pricingRoutes'));
 app.use('/api/actions', require('./routes/actionsRoutes'));
 app.use('/api/history', require('./routes/historyRoutes'));
+app.use('/api/pricing-engine', require('./routes/pricingEngineRoutes'));
 
 // Ruta raíz
 app.get('/', (req, res) => {

@@ -1185,6 +1185,100 @@ class AmazonService {
       return [];
     }
   }
+
+  /**
+   * Actualiza el precio de un producto en Amazon
+   */
+  async updateProductPrice(sellerSku, newPrice, context = {}) {
+    try {
+      if (!this.sellerId) {
+        throw new Error('AMAZON_SELLER_ID no configurado');
+      }
+
+      logger.info(`Updating price for SKU ${sellerSku} to ${newPrice}€`);
+
+      // Preparar el cuerpo de la solicitud para actualizar precio
+      const requestBody = {
+        productType: 'PRODUCT',
+        patches: [
+          {
+            op: 'replace',
+            path: '/attributes/purchasable_offer',
+            value: [
+              {
+                audience: 'ALL',
+                our_price: [
+                  {
+                    schedule: [
+                      {
+                        value_with_tax: newPrice,
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+
+      // Realizar la llamada a Amazon SP-API
+      const result = await spApiClient.executeWithRetry(async (client) => {
+        const response = await client.callAPI({
+          operation: 'patchListingsItem',
+          endpoint: 'listingsItems',
+          path: {
+            sellerId: this.sellerId,
+            sku: sellerSku,
+          },
+          query: {
+            marketplaceIds: [this.marketplaceId],
+          },
+          body: requestBody,
+        });
+        return response;
+      });
+
+      // Actualizar también en la base de datos local
+      const localResult = await Product.findOneAndUpdate(
+        { erp_sku: sellerSku },
+        {
+          amz_price: newPrice,
+          amz_lastInventoryUpdate: new Date(),
+          amz_syncStatus: 'synced',
+          amz_syncError: '',
+          'pricing.lastPriceUpdate': new Date(),
+        },
+        { new: true }
+      );
+
+      if (!localResult) {
+        throw new Error('Producto no encontrado en base de datos local');
+      }
+
+      logger.info(`Successfully updated price for SKU ${sellerSku} to ${newPrice}€`);
+
+      return {
+        amazon: result,
+        local: localResult,
+        success: true,
+      };
+    } catch (error) {
+      logger.error(`Error updating price for SKU ${sellerSku}:`, error);
+
+      // Marcar error en base de datos local
+      await Product.findOneAndUpdate(
+        { erp_sku: sellerSku },
+        {
+          amz_syncStatus: 'error',
+          amz_syncError: error.message,
+          amz_lastInventoryUpdate: new Date(),
+        }
+      );
+
+      throw error;
+    }
+  }
 }
 
 module.exports = new AmazonService();
