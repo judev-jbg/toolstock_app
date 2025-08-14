@@ -1,6 +1,7 @@
 const schedule = require('node-schedule');
 const amazonService = require('../amazon/amazonService');
-const logger = require('../../utils/logger').createLogger('productScheduler');
+const erpSyncService = require('../erp/erpSyncService');
+const logger = require('../../utils/logger');
 const Product = require('../../models/productModel');
 
 class ProductScheduler {
@@ -13,10 +14,27 @@ class ProductScheduler {
    */
   init() {
     this.scheduleMilwaukeeStockUpdates();
+    this.scheduleErpSync();
     // this.scheduleProductSync();
     // this.scheduleHealthCheck();
 
     logger.info('Product scheduler initialized');
+  }
+
+  scheduleErpSync() {
+    // Sincronización ERP cada hora (ej: 08:00, 09:00, etc.)
+    const erpSyncJob = schedule.scheduleJob('erp-sync', '0 8-16 * * *', async () => {
+      try {
+        logger.info('Starting scheduled ERP synchronization...');
+        const results = await erpSyncService.syncProducts();
+        logger.info('ERP synchronization completed:', results);
+      } catch (error) {
+        logger.error('Error in scheduled ERP sync:', error);
+      }
+    });
+
+    this.jobs.set('erp-sync', erpSyncJob);
+    logger.info('ERP sync scheduled every hour');
   }
 
   /**
@@ -24,7 +42,7 @@ class ProductScheduler {
    * Se ejecuta cada 6 horas
    */
   scheduleProductSync() {
-    const job = schedule.scheduleJob('0 */6 * * *', async () => {
+    const job = schedule.scheduleJob('10 8-16/2 * * *', async () => {
       try {
         logger.info('Starting scheduled product synchronization...');
         const results = await amazonService.syncProductsWithDatabase();
@@ -42,7 +60,7 @@ class ProductScheduler {
    * Programa las actualizaciones automáticas de stock para productos MILWAUKEE
    */
   scheduleMilwaukeeStockUpdates() {
-    // Tarea para ACTIVAR stock (Lunes a Viernes (1-5) a las 17:00) | Solo los Viernes (5) a las 17:00
+    // Tarea para ACTIVAR stock (Viernes (5) a las 17:00) | Solo los Viernes (5) a las 17:00
     const activateStockJob = schedule.scheduleJob(
       'milwaukee-activate-stock',
       '0 17 * * 5',
@@ -57,7 +75,7 @@ class ProductScheduler {
       }
     );
 
-    // Tarea para DESACTIVAR stock (Lunes a Viernes (1-5) a las 05:00 | Solo los Lunes (1) a las 05:00 )
+    // Tarea para DESACTIVAR stock (Lunes (1) a las 05:00 | Solo los Lunes (1) a las 05:00 )
     const deactivateStockJob = schedule.scheduleJob(
       'milwaukee-deactivate-stock',
       '0 5 * * 1',
@@ -76,8 +94,8 @@ class ProductScheduler {
     this.jobs.set('milwaukee-deactivate-stock', deactivateStockJob);
 
     logger.info('MILWAUKEE stock update schedules initialized:');
-    logger.info('- Activate stock (10): Monday-Friday at 17:00');
-    logger.info('- Deactivate stock (0): Monday-Friday at 05:00');
+    logger.info('- Activate stock (10): Friday at 17:00');
+    logger.info('- Deactivate stock (0): Monday at 05:00');
   }
 
   /**
@@ -314,6 +332,9 @@ class ProductScheduler {
       case 'productSync':
         logger.info('Forcing product sync...');
         return await amazonService.syncProductsWithDatabase();
+      case 'erp-sync':
+        logger.info('Forcing ERP sync...');
+        return await erpSyncService.syncProducts();
       case 'healthCheck':
         logger.info('Forcing health check...');
         return await amazonService.checkSyncNeeded();

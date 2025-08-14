@@ -1,15 +1,18 @@
+process.stderr.setEncoding('utf8');
+process.stdout.setEncoding('utf8');
+const logger = require('./utils/logger');
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
-const fs = require('fs');
 const { connectDB } = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 const productScheduler = require('./services/schedulers/productScheduler');
 
 if (process.env.NODE_ENV === 'development') {
+  logger.info(`Iniciando en modo ${process.env.NODE_ENV}`);
   productScheduler.init();
 }
 
@@ -52,7 +55,7 @@ const PORT = process.env.PORT || 4000;
 
 // Iniciar servidor
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  logger.info(`Server running on port ${PORT}`);
 });
 
 module.exports = app;

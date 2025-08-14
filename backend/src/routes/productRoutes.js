@@ -14,9 +14,9 @@ const {
   checkAmazonConfig,
   updateProduct,
 } = require('../controllers/productController');
-const { importProducts, getImportTemplate } = require('../controllers/importController');
+
 const { protect, authorize } = require('../middleware/authMiddleware');
-const { uploadExcel } = require('../middleware/excelMiddleware');
+
 const productScheduler = require('../services/schedulers/productScheduler');
 
 const router = express.Router();
@@ -26,16 +26,6 @@ router.get('/', protect, getProducts);
 router.get('/brands', protect, getBrands);
 router.get('/stats', protect, getProductStats);
 router.get('/sync-needed', protect, getProductsNeedingSync);
-
-// Rutas de importación de productos
-router.get('/import/template', protect, authorize('admin', 'root'), getImportTemplate);
-router.post(
-  '/import',
-  protect,
-  authorize('admin', 'root'),
-  uploadExcel.single('file'),
-  importProducts
-);
 
 // Rutas de administración (requieren permisos de admin)
 router.post('/sync', protect, authorize('admin', 'root'), syncProducts);
@@ -74,7 +64,6 @@ router.post('/milwaukee-stock/:action', protect, authorize('admin', 'root'), asy
  * @route   GET /api/products/jobs/status
  * @access  Private/Admin
  */
-// En productRoutes.js, actualizar el endpoint GET /api/products/jobs/status
 router.get('/jobs/status', protect, authorize('admin', 'root'), (req, res) => {
   try {
     const jobsStatus = productScheduler.getJobsStatus();
@@ -132,7 +121,13 @@ router.post('/jobs/execute/:jobName', protect, authorize('admin', 'root'), async
   try {
     const { jobName } = req.params;
 
-    const validJobs = ['productSync', 'healthCheck', 'milwaukee-activate', 'milwaukee-deactivate'];
+    const validJobs = [
+      'productSync',
+      'healthCheck',
+      'milwaukee-activate',
+      'milwaukee-deactivate',
+      'erp-sync',
+    ];
 
     if (!validJobs.includes(jobName)) {
       return res.status(400).json({
@@ -205,13 +200,51 @@ router.get('/jobs/info', protect, authorize('admin', 'root'), (req, res) => {
   }
 });
 
+router.post('/debug/force-erp-sync', protect, authorize('admin', 'root'), async (req, res) => {
+  try {
+    const erpSyncService = require('../services/erp/erpSyncService');
+    const results = await erpSyncService.syncProducts();
+
+    res.json({
+      message: 'ERP synchronization completed',
+      results,
+    });
+  } catch (error) {
+    logger.error('Error in manual ERP sync:', error);
+    res.status(500).json({
+      message: 'Error in ERP synchronization',
+      error: error.message,
+    });
+  }
+});
+
+// También agregar ruta para estadísticas ERP
+router.get('/debug/erp-stats', protect, authorize('admin', 'root'), async (req, res) => {
+  try {
+    const erpSyncService = require('../services/erp/erpSyncService');
+    const stats = await erpSyncService.getSyncStats();
+
+    res.json({
+      message: 'ERP synchronization statistics',
+      stats,
+    });
+  } catch (error) {
+    logger.error('Error getting ERP stats:', error);
+    res.status(500).json({
+      message: 'Error getting ERP statistics',
+      error: error.message,
+    });
+  }
+});
+
 // Función helper para describir los jobs
 function getJobDescription(jobName) {
   const descriptions = {
     productSync: 'Sincronización automática de productos con Amazon (cada 6 horas)',
+    'erp-sync': 'Sincronización de productos desde ERP SQL Server (cada hora)',
     healthCheck: 'Verificación de salud del sistema (cada hora)',
-    'milwaukee-activate-stock': 'Activar stock MILWAUKEE = 10 (L-V a las 17:00)',
-    'milwaukee-deactivate-stock': 'Desactivar stock MILWAUKEE = 0 (L-V a las 05:00)',
+    'milwaukee-activate-stock': 'Activar stock MILWAUKEE = 10 (V a las 17:00)',
+    'milwaukee-deactivate-stock': 'Desactivar stock MILWAUKEE = 0 (L a las 05:00)',
     quickSync: 'Sincronización rápida de productos modificados (cada 30 minutos)',
   };
 

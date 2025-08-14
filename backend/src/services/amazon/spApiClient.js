@@ -1,4 +1,5 @@
-const SellingPartner = require('amazon-sp-api'); // La importación correcta
+const SellingPartner = require('amazon-sp-api');
+const logger = require('../../utils/logger');
 
 /**
  * Cliente para conexión con Amazon SP-API
@@ -26,9 +27,9 @@ class SpApiClient {
           },
         })
       );
-      console.log('Amazon SP-API client initialized');
+      logger.info('Amazon SP-API client initialized');
     } catch (error) {
-      console.error('Error initializing Amazon SP-API client:', error);
+      logger.error('Error initializing Amazon SP-API client:', error);
       throw error;
     }
   }
@@ -57,11 +58,11 @@ class SpApiClient {
         return await operation(client);
       } catch (error) {
         lastError = error;
-        console.error(`SP-API request failed (attempt ${retryCount + 1}/${maxRetries}):`, error);
+        logger.error(`SP-API request failed (attempt ${retryCount + 1}/${maxRetries}):`, error);
 
         // Si el error es de token, reinicializar el cliente
         if (error.statusCode === 401 || (error.message && error.message.includes('token'))) {
-          console.log('Auth error detected, reinitializing client...');
+          logger.info('Auth error detected, reinitializing client...');
           this.initClient();
         }
 

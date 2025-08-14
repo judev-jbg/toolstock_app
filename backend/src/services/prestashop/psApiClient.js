@@ -1,5 +1,6 @@
 const axios = require('axios');
 const xml2js = require('xml2js');
+const logger = require('../../utils/logger');
 
 /**
  * Cliente para la WebService API de PrestaShop
@@ -74,19 +75,19 @@ class PrestashopApiClient {
 
       return response.data;
     } catch (error) {
-      console.error(`Error in PrestaShop API request [${method} ${resource}]:`, error.message);
+      logger.error(`Error in PrestaShop API request [${method} ${resource}]:`, error.message);
 
       // Intentar extraer detalles del error
       if (error.response && error.response.data) {
         if (typeof error.response.data === 'string' && error.response.data.trim().startsWith('<')) {
           try {
             const errorData = await this.parseXML(error.response.data);
-            console.error('PrestaShop API error details:', errorData);
+            logger.error('PrestaShop API error details:', errorData);
           } catch (parseError) {
-            console.error('Error parsing API error response:', parseError);
+            logger.error('Error parsing API error response:', parseError);
           }
         } else {
-          console.error('PrestaShop API error details:', error.response.data);
+          logger.error('PrestaShop API error details:', error.response.data);
         }
       }
 

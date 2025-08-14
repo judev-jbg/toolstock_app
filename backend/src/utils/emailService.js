@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer');
-const logger = require('./logger').createLogger('emailService');
+const logger = require('./logger');
 
 // Configuración del transporte de correo
 let transporter;
@@ -19,18 +19,18 @@ const initTransporter = () => {
     });
   } else {
     // Configuración para desarrollo (ethereal.email)
-    nodemailer.createTestAccount().then((testAccount) => {
-      transporter = nodemailer.createTransport({
-        host: 'smtp.ethereal.email',
-        port: 587,
-        secure: false,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass,
-        },
-      });
-      logger.info(`Created test email account: ${testAccount.user}`);
-    });
+    // nodemailer.createTestAccount().then((testAccount) => {
+    //   transporter = nodemailer.createTransport({
+    //     host: 'smtp.ethereal.email',
+    //     port: 587,
+    //     secure: false,
+    //     auth: {
+    //       user: testAccount.user,
+    //       pass: testAccount.pass,
+    //     },
+    //   });
+    //   logger.info(`Created test email account: ${testAccount.user}`);
+    // });
   }
 };
 

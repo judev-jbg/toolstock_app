@@ -1,8 +1,6 @@
 const spApiClient = require('./spApiClient');
 const Product = require('../../models/productModel');
-const logger = require('../../utils/logger').createLogger('amazonService');
-const path = require('path');
-const fs = require('fs');
+const logger = require('../../utils/logger');
 
 class AmazonService {
   constructor() {
@@ -441,21 +439,32 @@ class AmazonService {
       if (existingProduct) {
         // Actualizar solo campos de Amazon, mantener datos ERP
         const updateData = {};
+        let hasChanges = false;
         Object.keys(amazonData).forEach((key) => {
           if (key.startsWith('amz_')) {
-            updateData[key] = amazonData[key];
+            const newValue = amazonData[key];
+            const currentValue = existingProduct[key];
+            if (this.valueHasChanged(currentValue, newValue)) {
+              updateData[key] = newValue;
+              hasChanges = true;
+            }
           }
         });
 
-        updateData.amz_lastSyncAt = new Date();
-        updateData.amz_syncStatus = 'synced';
-        updateData.amz_syncError = '';
+        if (hasChanges) {
+          updateData.amz_lastSyncAt = new Date();
+          updateData.amz_syncStatus = 'synced';
+          updateData.amz_syncError = '';
 
-        const result = await Product.findByIdAndUpdate(existingProduct._id, updateData, {
-          new: true,
-        });
+          const result = await Product.findByIdAndUpdate(existingProduct._id, updateData, {
+            new: true,
+          });
 
-        return { product: result, created: false };
+          return { product: result, created: false, updated: true };
+        } else {
+          // No hay cambios, devolver producto existente
+          return { product: existingProduct, created: false, updated: false };
+        }
       } else {
         // Crear nuevo producto con erp_sku
         const newProductData = {
@@ -487,6 +496,39 @@ class AmazonService {
 
       throw error;
     }
+  }
+
+  valueHasChanged(currentValue, newValue) {
+    // Normalizar valores undefined/null
+    const current = currentValue ?? null;
+    const newVal = newValue ?? null;
+
+    // Comparación estricta
+    if (current === newVal) {
+      return false;
+    }
+
+    // Para números, strings, etc. - comparación adicional
+    if (typeof current === typeof newVal) {
+      return current !== newVal;
+    }
+
+    // Para arrays (si los tienes)
+    if (Array.isArray(current) && Array.isArray(newVal)) {
+      return JSON.stringify(current) !== JSON.stringify(newVal);
+    }
+
+    // Para objetos (si los tienes)
+    if (
+      typeof current === 'object' &&
+      typeof newVal === 'object' &&
+      current !== null &&
+      newVal !== null
+    ) {
+      return JSON.stringify(current) !== JSON.stringify(newVal);
+    }
+
+    return true;
   }
 
   /**

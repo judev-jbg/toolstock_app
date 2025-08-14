@@ -1,7 +1,7 @@
 // backend/src/services/amazon/merchantListingsService.js
 const spApiClient = require('./spApiClient');
 const Product = require('../../models/productModel');
-const logger = require('../../utils/logger').createLogger('merchantListingsService');
+const logger = require('../../utils/logger');
 const Papa = require('papaparse');
 
 class MerchantListingsService {

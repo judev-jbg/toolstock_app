@@ -2,12 +2,105 @@ const mongoose = require('mongoose');
 
 const productSchema = new mongoose.Schema(
   {
+    // Campos ERP (Enterprise Resource Planning)
     erp_sku: {
       type: String,
       required: true,
       unique: true,
       index: true,
     },
+    erp_name: {
+      type: String,
+      index: true,
+    },
+    erp_skuSuplier: {
+      type: String,
+      index: true,
+    },
+    erp_manufacturer: {
+      type: String,
+      index: true,
+    },
+    erp_cost: {
+      type: Number,
+      default: 0,
+    },
+    erp_barcode: {
+      type: String,
+      index: true,
+    },
+    erp_obs: {
+      type: String,
+    },
+    erp_offer_web: {
+      type: Number,
+      index: true,
+    },
+    erp_status: {
+      type: Number,
+      default: 0,
+    },
+    erp_weight: {
+      type: Number,
+      default: 0.0,
+    },
+    erp_stock: {
+      type: Number,
+      default: 0,
+    },
+    erp_length: {
+      type: Number,
+      default: 0.0,
+    },
+    erp_height: {
+      type: Number,
+      default: 0.0,
+    },
+    erp_depth: {
+      type: Number,
+      default: 0.0,
+    },
+    // Campos de precios por país
+    erp_price_web_official: {
+      type: Number,
+      default: 0,
+    },
+    erp_price_amz_es: {
+      type: Number,
+      default: 0,
+    },
+    erp_price_amz_de: {
+      type: Number,
+      default: 0,
+    },
+    erp_price_amz_it: {
+      type: Number,
+      default: 0,
+    },
+    erp_price_amz_nl: {
+      type: Number,
+      default: 0,
+    },
+    erp_price_amz_be: {
+      type: Number,
+      default: 0,
+    },
+    // Metadatos de sincronización ERP
+    erp_lastSyncAt: {
+      type: Date,
+      default: Date.now,
+    },
+    erp_syncStatus: {
+      type: String,
+      enum: ['synced', 'pending', 'error'],
+      default: 'pending',
+    },
+    erp_syncError: {
+      type: String,
+      default: '',
+    },
+
+    // Campos AMZ (Amazon)
     amz_asin: {
       type: String,
       index: true,
@@ -87,7 +180,6 @@ const productSchema = new mongoose.Schema(
     amz_lastInventoryUpdate: {
       type: Date,
     },
-
     amz_syncStatus: {
       type: String,
       enum: ['synced', 'pending', 'error'],
@@ -98,51 +190,7 @@ const productSchema = new mongoose.Schema(
       default: '',
     },
 
-    erp_name: {
-      type: String,
-      index: true,
-    },
-    erp_skuSuplier: {
-      type: String,
-      index: true,
-    },
-    erp_manufacturer: {
-      type: String,
-      index: true,
-    },
-    erp_cost: {
-      type: Number,
-      default: 0,
-    },
-    erp_price: {
-      type: Number,
-      default: 0,
-    },
-    erp_barcode: {
-      type: String,
-      index: true,
-    },
-    erp_obs: {
-      type: String,
-      index: true,
-    },
-    erp_status: {
-      type: Number,
-      default: 0,
-    },
-    erp_weight: {
-      type: Number,
-      default: 0.0,
-    },
-    erp_stock: {
-      type: Number,
-      default: 0,
-    },
-
-    // Campos auxiliares para cálculo de PVPM
-    // backend/src/models/productModel.js - ACTUALIZAR solo la sección pricing
-    // Reemplaza todo el objeto pricing existente con este:
-
+    // Sección de Pricing
     pricing: {
       // ===== CAMPOS AUXILIARES (prevalecen sobre valores por defecto) =====
       customCost: {
@@ -156,7 +204,6 @@ const productSchema = new mongoose.Schema(
           message: 'El coste personalizado debe ser positivo',
         },
       },
-
       customMargin: {
         type: Number,
         default: null, // Si es null, usar margen por defecto (0.75)
@@ -169,7 +216,6 @@ const productSchema = new mongoose.Schema(
           message: 'El margen personalizado debe estar entre 0.1 (10%) y 0.9 (90%)',
         },
       },
-
       customShippingCost: {
         type: Number,
         default: null, // Si es null, calcular por peso
@@ -188,12 +234,10 @@ const productSchema = new mongoose.Schema(
         default: 0,
         min: 0,
       },
-
       pvpmCalculatedAt: {
         type: Date,
         default: null,
       },
-
       // Breakdown del último cálculo PVPM para debugging
       pvpmBreakdown: {
         cost: { type: Number, default: 0 },
@@ -210,34 +254,28 @@ const productSchema = new mongoose.Schema(
         default: null,
         min: 0,
       },
-
       competitorPriceUpdatedAt: {
         type: Date,
         default: null,
       },
-
       // Información adicional de competencia
       competitorData: {
         hasBuybox: {
           type: Boolean,
           default: false,
         },
-
         buyboxPrice: {
           type: Number,
           default: null,
         },
-
         lowestPrice: {
           type: Number,
           default: null,
         },
-
         totalOffers: {
           type: Number,
           default: 0,
         },
-
         lastChecked: {
           type: Date,
           default: null,
@@ -256,24 +294,20 @@ const productSchema = new mongoose.Schema(
           message: 'El precio fijo debe ser positivo',
         },
       },
-
       fixedPriceReason: {
         type: String,
         default: '', // Razón comercial del precio fijo
         maxlength: 500,
       },
-
       fixedPriceSetAt: {
         type: Date,
         default: null, // Cuándo se estableció el precio fijo
       },
-
       fixedPriceSetBy: {
         type: String,
         default: '', // Usuario que estableció el precio fijo
         maxlength: 100,
       },
-
       // Fecha de expiración del precio fijo (opcional)
       fixedPriceExpiresAt: {
         type: Date,
@@ -285,12 +319,10 @@ const productSchema = new mongoose.Schema(
         type: Boolean,
         default: true, // Si false, el producto no se actualiza automáticamente
       },
-
       lastPriceUpdate: {
         type: Date,
         default: null,
       },
-
       // Número de actualizaciones automáticas realizadas
       autoUpdateCount: {
         type: Number,
@@ -312,13 +344,11 @@ const productSchema = new mongoose.Schema(
         default: 'ok',
         index: true,
       },
-
       pricingStatusMessage: {
         type: String,
         default: '',
         maxlength: 1000,
       },
-
       pricingStatusUpdatedAt: {
         type: Date,
         default: Date.now,
@@ -333,20 +363,17 @@ const productSchema = new mongoose.Schema(
           default: null,
           min: 0,
         },
-
         // Nunca subir del precio especificado
         maximumPrice: {
           type: Number,
           default: null,
           min: 0,
         },
-
         // Excluir de actualizaciones automáticas durante horarios específicos
         excludeFromAutoUpdate: {
           type: Boolean,
           default: false,
         },
-
         // Margen mínimo requerido (prevalece sobre margen global)
         minimumMarginRequired: {
           type: Number,
@@ -389,22 +416,27 @@ const productSchema = new mongoose.Schema(
 );
 
 // Índices compuestos para mejorar las consultas
-productSchema.index({ brand: 1, status: 1 });
-productSchema.index({ sellerSku: 'text', title: 'text' });
-productSchema.index({ lastSyncAt: -1 });
+productSchema.index({ erp_manufacturer: 1, erp_status: 1 });
+productSchema.index({ erp_sku: 'text', erp_name: 'text' });
+productSchema.index({ erp_lastSyncAt: -1 });
 
 // Método para formatear precio
 productSchema.methods.getFormattedPrice = function () {
   return new Intl.NumberFormat('es-ES', {
     style: 'currency',
-    currency: this.currency,
-  }).format(this.price);
+    currency: 'EUR',
+  }).format(this.erp_price);
 };
 
 // Método para verificar si necesita sincronización
 productSchema.methods.needsSync = function () {
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-  return !this.lastSyncAt || this.lastSyncAt < oneHourAgo;
+  return (
+    !this.erp_lastSyncAt ||
+    this.erp_lastSyncAt < oneHourAgo ||
+    !this.amz_lastSyncAt ||
+    this.amz_lastSyncAt < oneHourAgo
+  );
 };
 
 const Product = mongoose.model('Product', productSchema);

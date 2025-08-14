@@ -1,6 +1,6 @@
 const Product = require('../models/productModel');
 const amazonService = require('../services/amazon/amazonService');
-const logger = require('../utils/logger').createLogger('productController');
+const logger = require('../utils/logger');
 
 /**
  * @desc    Obtener todos los productos con filtros y paginación

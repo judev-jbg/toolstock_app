@@ -2,7 +2,7 @@
  * Helper para verificar y validar la configuración de Amazon SP-API
  */
 
-const logger = require('./logger').createLogger('amazonConfig');
+const logger = require('./logger');
 
 /**
  * Verifica que todas las variables de entorno necesarias estén configuradas
