@@ -1,7 +1,7 @@
 const pricingEngine = require('../services/pricing/pricingEngine');
 const notificationHandler = require('../services/amazon/notificationHandler');
 const Product = require('../models/productModel');
-const logger = require('../utils/logger').createLogger('pricingEngineController');
+const logger = require('../utils/logger');
 
 /**
  * @desc    Procesar pricing para un producto específico
