@@ -1,6 +1,7 @@
 // backend/src/services/pricing/pvpmCalculator.js - NUEVO ARCHIVO
 const PricingConfig = require('../../models/pricingConfigModel');
 const Product = require('../../models/productModel');
+const actionDetector = require('./actionDetector');
 const logger = require('../../utils/logger');
 
 class PVPMCalculator {
@@ -167,6 +168,16 @@ class PVPMCalculator {
         new: true,
         runValidators: true,
       });
+
+      // Detectar acciones automáticamente después de actualizar PVPM
+      if (options.detectActions !== false) {
+        try {
+          await actionDetector.processProductActions(updatedProduct);
+        } catch (actionError) {
+          logger.warn(`Error detecting actions for product ${product.erp_sku}:`, actionError);
+          // No fallar el PVPM por errores de detección de acciones
+        }
+      }
 
       logger.info(`PVPM updated for product ${product.erp_sku}:`, {
         previousPvpm,
