@@ -199,7 +199,19 @@ class SqlServerService {
           ON c.IdArticulo = a.IdArticulo
       WHERE 
           p.erp_skuSuplier IS NOT NULL 
-
+          AND (
+              a.FechaInsertUpdate >= DATEADD(MINUTE, -@minutesAgo, GETDATE())
+              OR p.FechaInsertUpdate >= DATEADD(MINUTE, -@minutesAgo, GETDATE())
+              OR s.FechaInsertUpdate >= DATEADD(MINUTE, -@minutesAgo, GETDATE())
+              OR pwd.FechaInsertUpdate >= DATEADD(MINUTE, -@minutesAgo, GETDATE())
+              OR pw.FechaInsertUpdate >= DATEADD(MINUTE, -@minutesAgo, GETDATE())
+              OR pes.FechaInsertUpdate >= DATEADD(MINUTE, -@minutesAgo, GETDATE())
+              OR pde.FechaInsertUpdate >= DATEADD(MINUTE, -@minutesAgo, GETDATE())
+              OR pit.FechaInsertUpdate >= DATEADD(MINUTE, -@minutesAgo, GETDATE())
+              OR pnl.FechaInsertUpdate >= DATEADD(MINUTE, -@minutesAgo, GETDATE())
+              OR pbe.FechaInsertUpdate >= DATEADD(MINUTE, -@minutesAgo, GETDATE())
+              OR c.FechaInsertUpdate >= DATEADD(MINUTE, -@minutesAgo, GETDATE())
+          )
       ORDER BY a.FechaInsertUpdate DESC
     `;
 

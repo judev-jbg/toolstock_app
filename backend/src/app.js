@@ -42,6 +42,7 @@ app.use('/uploads/avatars', express.static(path.join(__dirname, '../uploads/avat
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/pricing', require('./routes/pricingRoutes'));
 app.use('/api/actions', require('./routes/actionsRoutes'));
+app.use('/api/history', require('./routes/historyRoutes'));
 
 // Ruta raíz
 app.get('/', (req, res) => {

@@ -169,6 +169,20 @@ class PVPMCalculator {
         runValidators: true,
       });
 
+      // Registrar en historial si hubo cambio significativo
+      if (pvpmChanged && options.recordHistory !== false) {
+        try {
+          await historyService.recordPVPMChange(product, pvpmResult, {
+            trigger: options.trigger || 'manual_calculation',
+            changedBy: options.changedBy || 'system',
+            batchId: options.batchId,
+          });
+        } catch (historyError) {
+          logger.warn(`Error recording PVPM history for ${product.erp_sku}:`, historyError);
+          // No fallar el PVPM por errores de historial
+        }
+      }
+
       // Detectar acciones automáticamente después de actualizar PVPM
       if (options.detectActions !== false) {
         try {
