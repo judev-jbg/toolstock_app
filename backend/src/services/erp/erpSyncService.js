@@ -122,6 +122,7 @@ class ErpSyncService {
     const fieldsToCompare = [
       'erp_skuSuplier',
       'erp_name',
+      'erp_manufacturer',
       'erp_stock',
       'erp_price_web_official',
       'erp_price_amz_es',
@@ -172,6 +173,7 @@ class ErpSyncService {
       // Datos ERP
       erp_skuSuplier: erpProduct.erp_skuSuplier || '',
       erp_name: erpProduct.erp_name || '',
+      erp_manufacturer: erpProduct.erp_manufacturer || '',
       erp_stock: erpProduct.erp_stock || 0,
       erp_price_web_official: erpProduct.erp_price_web_official || 0,
       erp_price_amz_es: erpProduct.erp_price_amz_es || 0,
@@ -209,6 +211,7 @@ class ErpSyncService {
       // Datos ERP
       erp_skuSuplier: erpProduct.erp_skuSuplier || '',
       erp_name: erpProduct.erp_name || '',
+      erp_manufacturer: erpProduct.erp_manufacturer || '',
       erp_stock: erpProduct.erp_stock || 0,
       erp_price_web_official: erpProduct.erp_price_web_official || 0,
       erp_price_amz_es: erpProduct.erp_price_amz_es || 0,

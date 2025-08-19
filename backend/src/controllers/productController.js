@@ -14,7 +14,7 @@ const getProducts = async (req, res) => {
       limit = 20,
       search = '',
       brand = '',
-      status = '',
+      status = 'active',
       sortBy = 'updatedAt',
       sortOrder = 'desc',
     } = req.query;
@@ -27,46 +27,26 @@ const getProducts = async (req, res) => {
     if (search) {
       filters.$or = [
         { erp_sku: { $regex: search, $options: 'i' } },
+        { erp_name: { $regex: search, $options: 'i' } },
         { amz_sellerSku: { $regex: search, $options: 'i' } },
         { amz_asin: { $regex: search, $options: 'i' } },
         { amz_title: { $regex: search, $options: 'i' } },
-        { erp_name: { $regex: search, $options: 'i' } },
       ];
-    }
+    } else {
+      // Filtro por marca
+      if (brand && brand !== 'all') {
+        filters.erp_manufacturer = brand;
+      }
 
-    // Filtro por marca
-    if (brand && brand !== 'all') {
-      filters.$or = filters.$or
-        ? [...filters.$or, { erp_manufacturer: brand }, { amz_brand: brand }]
-        : [{ erp_manufacturer: brand }, { amz_brand: brand }];
-    }
-
-    // Filtro por estado
-    if (status && status !== 'all') {
-      if (status === 'Active') {
-        filters.$or = filters.$or
-          ? [
-              ...filters.$or,
-              { amz_status: 'Active' },
-              { $and: [{ erp_status: 1 }, { amz_status: { $exists: false } }] },
-            ]
-          : [
-              { amz_status: 'Active' },
-              { $and: [{ erp_status: 1 }, { amz_status: { $exists: false } }] },
-            ];
-      } else if (status === 'Inactive') {
-        filters.$or = filters.$or
-          ? [
-              ...filters.$or,
-              { amz_status: 'Inactive' },
-              { $and: [{ erp_status: 0 }, { amz_status: { $exists: false } }] },
-            ]
-          : [
-              { amz_status: 'Inactive' },
-              { $and: [{ erp_status: 0 }, { amz_status: { $exists: false } }] },
-            ];
-      } else {
-        filters.amz_status = status;
+      // Filtro por estado
+      if (status && status !== 'all') {
+        if (status === 'active') {
+          filters.erp_status = 0; // Activo
+        } else if (status === 'inactive') {
+          filters.erp_status = 1; // Anulado
+        } else {
+          filters.erp_status = status;
+        }
       }
     }
 
@@ -78,6 +58,9 @@ const getProducts = async (req, res) => {
     // Configurar ordenación
     const sortOptions = {};
     sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    if (sortBy !== '_id') {
+      sortOptions._id = sortOrder === 'desc' ? -1 : 1;
+    }
 
     // Ejecutar consulta con paginación
     const [products, totalCount] = await Promise.all([

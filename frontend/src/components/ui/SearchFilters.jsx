@@ -12,7 +12,7 @@ import {
   Grid,
   InputAdornment,
   IconButton,
-  Collapse,
+  Popover,
 } from "@mui/material";
 import {
   MdManageSearch as SearchIcon,
@@ -34,8 +34,9 @@ export const SearchFilters = ({
   onToggleAdvancedFilters,
   activeFilters = {},
 }) => {
-  const [expanded, setExpanded] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
   const debouncedSearch = useDebounce(searchValue, 300);
+  const open = Boolean(anchorEl);
 
   React.useEffect(() => {
     if (onSearchChange) {
@@ -45,6 +46,7 @@ export const SearchFilters = ({
 
   const handleFilterChange = (filterKey, value) => {
     if (onFilterChange) {
+      console.log(filterKey, value);
       onFilterChange(filterKey, value);
     }
   };
@@ -55,10 +57,17 @@ export const SearchFilters = ({
     }
   };
 
-  const handleToggleExpanded = () => {
-    setExpanded(!expanded);
+  const handleOpenPopover = (event) => {
+    setAnchorEl(event.currentTarget);
     if (onToggleAdvancedFilters) {
-      onToggleAdvancedFilters(!expanded);
+      onToggleAdvancedFilters(true);
+    }
+  };
+
+  const handleClosePopover = () => {
+    setAnchorEl(null);
+    if (onToggleAdvancedFilters) {
+      onToggleAdvancedFilters(false);
     }
   };
 
@@ -131,9 +140,9 @@ export const SearchFilters = ({
               <Button
                 variant="outlined"
                 size="small"
-                onClick={handleToggleExpanded}
+                onClick={handleOpenPopover}
                 startIcon={<FilterListIcon />}
-                endIcon={expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                endIcon={open ? <ExpandLessIcon /> : <ExpandMoreIcon />}
               >
                 Filtros{" "}
                 {getActiveFiltersCount() > 0 && `(${getActiveFiltersCount()})`}
@@ -156,11 +165,23 @@ export const SearchFilters = ({
 
       {/* Filtros avanzados */}
       {showAdvancedFilters && (
-        <Collapse in={expanded}>
-          <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: "divider" }}>
+        <Popover
+          open={open}
+          anchorEl={anchorEl}
+          onClose={handleClosePopover}
+          anchorOrigin={{
+            vertical: "bottom",
+            horizontal: "right",
+          }}
+          transformOrigin={{
+            vertical: "top",
+            horizontal: "right",
+          }}
+        >
+          <Paper sx={{ p: 2, minWidth: 400, maxWidth: 600 }}>
             <Grid container spacing={2}>
               {filters.slice(2).map((filter) => (
-                <Grid item xs={12} sm={6} md={3} key={filter.key}>
+                <Grid item xs={12} sm={6} key={filter.key}>
                   <FormControl fullWidth size="small">
                     <InputLabel>{filter.label}</InputLabel>
                     <Select
@@ -183,8 +204,8 @@ export const SearchFilters = ({
                 </Grid>
               ))}
             </Grid>
-          </Box>
-        </Collapse>
+          </Paper>
+        </Popover>
       )}
 
       {/* Chips de filtros activos */}

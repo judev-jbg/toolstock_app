@@ -18,11 +18,11 @@ class NotificationScheduler {
       return;
     }
 
-    if (process.env.NODE_ENV === 'production') {
-      this.setupProductionJobs();
-    } else {
-      this.setupDevelopmentJobs();
-    }
+    // if (process.env.NODE_ENV === 'production') {
+    //   this.setupProductionJobs();
+    // } else {
+    //   this.setupDevelopmentJobs();
+    // }
 
     this.isInitialized = true;
     logger.info('Notification scheduler initialized');

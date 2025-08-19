@@ -1,11 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Typography,
   Button,
-  Grid,
-  Card,
-  CardContent,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -15,7 +12,6 @@ import {
   Fab,
   Backdrop,
   CircularProgress,
-  Tooltip,
   IconButton,
   Menu,
   MenuItem,
@@ -52,7 +48,7 @@ export const Catalog = () => {
   const [searchValue, setSearchValue] = useState("");
   const [filters, setFilters] = useState({
     brand: "",
-    status: "",
+    status: "active",
     sortBy: "updatedAt",
     sortOrder: "desc",
   });
@@ -144,12 +140,12 @@ export const Catalog = () => {
             variant="body2"
             fontWeight="medium"
             color={
-              row.amz_price > row.erp_price * 1.21
+              row.amz_price > row.erp_price_web_official * 1.21
                 ? "text.primary"
                 : "error.main"
             }
           >
-            {formatCurrency(value * 1.21 || row.erp_price * 1.21)}
+            {formatCurrency(value * 1.21 || row.erp_price_web_official * 1.21)}
           </Typography>
           {row.erp_cost && (
             <Typography variant="caption" color="text.secondary">
@@ -169,7 +165,9 @@ export const Catalog = () => {
           variant="body2"
           fontWeight="medium"
           color={
-            row.amz_price > row.erp_price * 1.21 ? "text.primary" : "error.main"
+            row.amz_price > row.erp_price_web_official * 1.21
+              ? "text.primary"
+              : "error.main"
           }
         >
           {formatCurrency(value || row.amz_price)}
@@ -234,9 +232,8 @@ export const Catalog = () => {
       key: "status",
       label: "Estado",
       options: [
-        { value: "Active", label: "Activo" },
-        { value: "Inactive", label: "Inactivo" },
-        { value: "Incomplete", label: "Incompleto" },
+        { value: "active", label: "Activo" },
+        { value: "inactive", label: "Anulado" },
       ],
     },
     {
@@ -271,7 +268,7 @@ export const Catalog = () => {
   const handleClearFilters = () => {
     setFilters({
       brand: "",
-      status: "",
+      status: "active",
       sortBy: "updatedAt",
       sortOrder: "desc",
     });
@@ -396,32 +393,32 @@ export const Catalog = () => {
         </Box>
 
         <Box sx={{ display: "flex", gap: 2 }}>
-          <Button
+          {/* <Button
             variant="outlined"
             startIcon={<GetAppIcon />}
             onClick={handleDownloadTemplate}
           >
             Plantilla
-          </Button>
-          <Button
+          </Button> */}
+          {/* <Button
             variant="outlined"
             startIcon={<FileUploadIcon />}
             onClick={() => setImportDialogOpen(true)}
           >
             Importar
-          </Button>
+          </Button> */}
           <ExportButton
             data={productsData?.products || []}
             filename="catalogo-productos"
             dataType="products"
           />
-          <Button
+          {/* <Button
             variant="outlined"
             startIcon={<SyncIcon />}
             onClick={() => setSyncDialogOpen(true)}
           >
             Sincronizar
-          </Button>
+          </Button> */}
           <IconButton onClick={handleMenuOpen}>
             <MoreVertIcon />
           </IconButton>

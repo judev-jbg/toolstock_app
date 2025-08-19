@@ -79,6 +79,7 @@ class SqlServerService {
           a.idArticulo AS erp_sku,
           p.erp_skuSuplier,
           Descrip AS erp_name,
+          erp_manufacturer,
           ISNULL(stock_actual,0) AS erp_stock,
           ISNULL(erp_price_web_official,ISNULL(erp_price_web_default,0)) AS erp_price_web_official,
           ISNULL(erp_price_amz_es,0) AS erp_price_amz_es,
@@ -197,6 +198,15 @@ class SqlServerService {
           WHERE IdLista = 1
           ) c
           ON c.IdArticulo = a.IdArticulo
+       LEFT JOIN
+          (
+          SELECT
+              IdMarcaMaquina,
+              Descrip AS erp_manufacturer,
+              FechaInsertUpdate
+          FROM [dbo].[PartesMarcasMaquinas] WITH (NOLOCK)
+          ) pm
+          ON pm.IdMarcaMaquina = a.IdMarcaArticulo
       WHERE 
           p.erp_skuSuplier IS NOT NULL 
           AND (

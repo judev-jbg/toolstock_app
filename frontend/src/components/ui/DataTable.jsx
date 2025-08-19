@@ -239,7 +239,7 @@ export const DataTable = ({
 
   return (
     <Paper sx={{ width: "100%", mb: 2 }}>
-      <TableContainer sx={{ maxHeight: 440 }}>
+      <TableContainer sx={{ maxHeight: 500 }}>
         <Table
           stickyHeader={stickyHeader}
           aria-labelledby="tableTitle"
