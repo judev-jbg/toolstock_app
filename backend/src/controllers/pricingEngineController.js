@@ -33,7 +33,8 @@ const processProduct = async (req, res) => {
         success: result.success,
         previousPrice:
           result.decision?.metadata?.competitorData?.previousCompetitorPrice || product.amz_price,
-        newPrice: result.decision?.finalPrice,
+        amzNewPrice: result.decision?.amzFinalPrice,
+        webNewPrice: result.decision?.webFinalPrice,
         strategy: result.decision?.strategy,
         reasoning: result.decision?.reasoning,
         confidence: result.decision?.confidence,
@@ -167,9 +168,10 @@ const simulateProduct = async (req, res) => {
     res.json({
       message: 'Simulación de pricing completada',
       simulation: {
-        currentPrice: product.amz_price || 0,
-        simulatedPrice: decision.finalPrice,
-        priceChange: decision.finalPrice - (product.amz_price || 0),
+        amzCurrentPrice: product.amz_price || 0,
+        amzSimulatedPrice: decision.amzFinalPrice,
+        webSimulatedPrice: decision.webFinalPrice,
+        priceChange: decision.amzFinalPrice - (product.amz_price || 0),
         strategy: decision.strategy,
         reasoning: decision.reasoning,
         confidence: decision.confidence,
@@ -230,7 +232,7 @@ const processNotification = async (req, res) => {
         ? {
             success: result.success,
             strategy: result.decision?.strategy,
-            priceChanged: result.decision?.finalPrice !== result.product?.amz_price,
+            priceChanged: result.decision?.amzFinalPrice !== result.product?.amz_price,
           }
         : null,
     });

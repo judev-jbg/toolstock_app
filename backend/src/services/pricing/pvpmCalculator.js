@@ -178,7 +178,7 @@ class PVPMCalculator {
             batchId: options.batchId,
           });
         } catch (historyError) {
-          logger.warn(`Error recording PVPM history for ${product.erp_sku}:`, historyError);
+          logger.warning(`Error recording PVPM history for ${product.erp_sku}:`, historyError);
           // No fallar el PVPM por errores de historial
         }
       }
@@ -188,7 +188,7 @@ class PVPMCalculator {
         try {
           await actionDetector.processProductActions(updatedProduct);
         } catch (actionError) {
-          logger.warn(`Error detecting actions for product ${product.erp_sku}:`, actionError);
+          logger.warning(`Error detecting actions for product ${product.erp_sku}:`, actionError);
           // No fallar el PVPM por errores de detección de acciones
         }
       }

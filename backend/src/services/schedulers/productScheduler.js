@@ -15,8 +15,8 @@ class ProductScheduler {
   init() {
     this.scheduleMilwaukeeStockUpdates();
     this.scheduleErpSync();
-    // this.scheduleProductSync();
-    // this.scheduleHealthCheck();
+    this.scheduleProductSync();
+    this.scheduleHealthCheck();
 
     logger.info('Product scheduler initialized');
   }
@@ -39,10 +39,10 @@ class ProductScheduler {
 
   /**
    * Programa la sincronización automática de productos
-   * Se ejecuta cada 6 horas
+   * Se ejecuta cada 1 hora
    */
   scheduleProductSync() {
-    const job = schedule.scheduleJob('10 8-16/2 * * *', async () => {
+    const job = schedule.scheduleJob('10 8-16/1 * * *', async () => {
       try {
         logger.info('Starting scheduled product synchronization...');
         const results = await amazonService.syncProductsWithDatabase();
@@ -53,7 +53,7 @@ class ProductScheduler {
     });
 
     this.jobs.set('productSync', job);
-    logger.info('Product sync scheduled every 6 hours');
+    logger.info('Product sync scheduled every 1 hour');
   }
 
   /**

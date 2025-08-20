@@ -14,7 +14,7 @@ class PricingEngine {
     try {
       logger.info(`Processing pricing for product ${product.erp_sku}`, {
         trigger: context.trigger || 'unknown',
-        currentPrice: product.amz_price,
+        amzCurrentPrice: product.amz_price,
       });
 
       // 1. Preparar contexto de decisión
@@ -61,8 +61,8 @@ class PricingEngine {
       };
 
       logger.info(`Pricing processing completed for ${product.erp_sku}:`, {
-        previousPrice: decisionContext.currentPrice,
-        newPrice: pricingDecision.finalPrice,
+        previousPrice: decisionContext.amzCurrentPrice,
+        newPrice: pricingDecision.amzFinalPrice,
         strategy: pricingDecision.strategy,
         success: result.success,
       });
@@ -101,7 +101,7 @@ class PricingEngine {
         batchId: inputContext.batchId || null,
 
         // Current state
-        currentPrice: product.amz_price || 0,
+        amzCurrentPrice: product.amz_price || 0,
         pvpm: product.pricing?.pvpm || 0,
         hasFixedPrice: !!product.pricing?.fixedPrice,
         fixedPrice: product.pricing?.fixedPrice || null,
@@ -134,7 +134,7 @@ class PricingEngine {
       };
 
       logger.debug(`Decision context prepared for ${product.erp_sku}:`, {
-        currentPrice: context.currentPrice,
+        amzCurrentPrice: context.amzCurrentPrice,
         pvpm: context.pvpm,
         hasFixedPrice: context.hasFixedPrice,
         isWebOffer: context.isWebOffer,
@@ -155,7 +155,7 @@ class PricingEngine {
     try {
       let decision = {
         strategy: null,
-        finalPrice: 0,
+        amzFinalPrice: 0,
         priceSource: null,
         reasoning: '',
         metadata: {},
@@ -181,9 +181,9 @@ class PricingEngine {
       }
 
       // Validar que el precio no sea menor al PVPM (regla crítica)
-      if (decision.finalPrice < context.pvpm) {
+      if (!context.hasFixedPrice && !context.isWebOffer && decision.amzFinalPrice < context.pvpm) {
         const originalDecision = { ...decision };
-        decision.finalPrice = context.pvpm;
+        decision.amzFinalPrice = context.pvpm;
         decision.strategy = 'pvpm_override';
         decision.priceSource = 'pvpm';
         decision.reasoning = `Precio ajustado al PVPM mínimo. Estrategia original: ${originalDecision.strategy}`;
@@ -191,13 +191,13 @@ class PricingEngine {
         decision.metadata.originalDecision = originalDecision;
         decision.recommendations.push({
           type: 'warning',
-          message: `El precio se ajustó al PVPM mínimo (${context.pvpm.toFixed(2)}€) desde ${originalDecision.finalPrice.toFixed(2)}€`,
+          message: `El precio se ajustó al PVPM mínimo (${context.pvpm.toFixed(2)}€) desde ${originalDecision.amzFinalPrice.toFixed(2)}€`,
         });
       }
 
       logger.debug(`Pricing strategy applied for ${product.erp_sku}:`, {
         strategy: decision.strategy,
-        finalPrice: decision.finalPrice,
+        amzFinalPrice: decision.amzFinalPrice,
         pvpm: context.pvpm,
         confidence: decision.confidence,
       });
@@ -215,7 +215,8 @@ class PricingEngine {
   async applyFixedPriceStrategy(product, context) {
     const decision = {
       strategy: 'fixed_price',
-      finalPrice: context.fixedPrice,
+      amzFinalPrice: context.fixedPrice,
+      webFinalPrice: context.fixedPrice * 0.96,
       priceSource: 'fixed_price',
       reasoning: `Precio fijo establecido: ${context.fixedPrice.toFixed(2)}€. Razón: ${product.pricing?.fixedPriceReason || 'No especificada'}`,
       confidence: 100,
@@ -244,7 +245,8 @@ class PricingEngine {
   async applyWebOfferStrategy(product, context) {
     const decision = {
       strategy: 'web_offer',
-      finalPrice: context.pvpm,
+      amzFinalPrice: context.pvpm,
+      webFinalPrice: context.webPrice,
       priceSource: 'pvpm',
       reasoning: `Oferta WEB: usando PVPM (${context.pvpm.toFixed(2)}€) para Amazon. Precio web: ${context.webPrice.toFixed(2)}€`,
       confidence: 90,
@@ -282,7 +284,8 @@ class PricingEngine {
 
     let decision = {
       strategy: null,
-      finalPrice: 0,
+      amzFinalPrice: 0,
+      webFinalPrice: 0,
       priceSource: 'competitor_strategy',
       reasoning: '',
       confidence: 80,
@@ -298,13 +301,14 @@ class PricingEngine {
     // Si tenemos buybox, mantener ventaja
     if (context.hasBuybox) {
       const buyboxPrice = context.competitorPrice + config.competitorSettings.buyboxDifference;
-      const finalPrice = Math.max(buyboxPrice, context.pvpm);
+      const amzFinalPrice = Math.max(buyboxPrice, context.pvpm);
 
       decision.strategy = 'maintain_buybox';
-      decision.finalPrice = finalPrice;
+      decision.amzFinalPrice = amzFinalPrice;
+      decision.webFinalPrice = amzFinalPrice * 0.96;
       decision.reasoning = `Manteniendo buybox: competencia + ${config.competitorSettings.buyboxDifference}€ (${context.competitorPrice.toFixed(2)}€ + ${config.competitorSettings.buyboxDifference.toFixed(2)}€ = ${buyboxPrice.toFixed(2)}€)`;
 
-      if (finalPrice > buyboxPrice) {
+      if (amzFinalPrice > buyboxPrice) {
         decision.reasoning += `. Ajustado al PVPM mínimo: ${context.pvpm.toFixed(2)}€`;
         decision.confidence = 60;
       }
@@ -313,13 +317,14 @@ class PricingEngine {
     else {
       const competitivePrice =
         context.competitorPrice - config.competitorSettings.fallbackDifference;
-      const finalPrice = Math.max(competitivePrice, context.pvpm);
+      const amzFinalPrice = Math.max(competitivePrice, context.pvpm);
 
       decision.strategy = 'compete_price';
-      decision.finalPrice = finalPrice;
+      decision.amzFinalPrice = amzFinalPrice;
+      decision.webFinalPrice = amzFinalPrice * 0.96;
       decision.reasoning = `Compitiendo: competencia - ${config.competitorSettings.fallbackDifference.toFixed(2)}€ (${context.competitorPrice.toFixed(2)}€ - ${config.competitorSettings.fallbackDifference.toFixed(2)}€ = ${competitivePrice.toFixed(2)}€)`;
 
-      if (finalPrice > competitivePrice) {
+      if (amzFinalPrice > competitivePrice) {
         decision.reasoning += `. Ajustado al PVPM mínimo: ${context.pvpm.toFixed(2)}€`;
         decision.confidence = 40;
         decision.recommendations.push({
@@ -338,7 +343,8 @@ class PricingEngine {
   async applyPVPMStrategy(product, context) {
     const decision = {
       strategy: 'follow_pvpm',
-      finalPrice: context.pvpm,
+      amzFinalPrice: context.pvpm,
+      webFinalPrice: context.pvpm * 0.96,
       priceSource: 'pvpm',
       reasoning: `Sin datos de competencia: usando PVPM (${context.pvpm.toFixed(2)}€)`,
       confidence: 70,
@@ -378,10 +384,10 @@ class PricingEngine {
 
     try {
       // Check 1: PVPM mínimo
-      if (decision.finalPrice < context.pvpm) {
+      if (decision.amzFinalPrice < context.pvpm) {
         validation.errors.push({
           type: 'pvpm_violation',
-          message: `Precio (${decision.finalPrice.toFixed(2)}€) por debajo del PVPM mínimo (${context.pvpm.toFixed(2)}€)`,
+          message: `Precio (${decision.amzFinalPrice.toFixed(2)}€) por debajo del PVPM mínimo (${context.pvpm.toFixed(2)}€)`,
           severity: 'critical',
         });
         validation.checks.pvpmCheck = false;
@@ -393,7 +399,7 @@ class PricingEngine {
       // Check 2: Validación de oferta web
       if (context.isWebOffer) {
         const requiredAmazonPrice = context.webPrice * 1.04;
-        if (decision.finalPrice < requiredAmazonPrice) {
+        if (decision.amzFinalPrice < requiredAmazonPrice) {
           validation.warnings.push({
             type: 'web_offer_conflict',
             message: `OFERTA WEB: Amazon debe costar al menos ${requiredAmazonPrice.toFixed(2)}€ para que web sea 4% más barata`,
@@ -406,12 +412,12 @@ class PricingEngine {
       }
 
       // Check 3: Relación Amazon vs Web general
-      if (context.webPrice > 0 && decision.finalPrice > 0) {
-        const requiredWebPrice = decision.finalPrice * 0.96;
+      if (context.webPrice > 0 && decision.amzFinalPrice > 0) {
+        const requiredWebPrice = decision.amzFinalPrice * 0.96;
         if (context.webPrice > requiredWebPrice) {
           validation.warnings.push({
             type: 'amazon_cheaper_than_web',
-            message: `Amazon (${decision.finalPrice.toFixed(2)}€) más barato que web (${context.webPrice.toFixed(2)}€). Web debería costar máximo ${requiredWebPrice.toFixed(2)}€`,
+            message: `Amazon (${decision.amzFinalPrice.toFixed(2)}€) más barato que web (${context.webPrice.toFixed(2)}€). Web debería costar máximo ${requiredWebPrice.toFixed(2)}€`,
             severity: 'critical',
           });
           validation.checks.marginCheck = false;
@@ -447,7 +453,7 @@ class PricingEngine {
       }
 
       // Check 6: Cambio significativo
-      const priceChange = Math.abs(decision.finalPrice - context.currentPrice);
+      const priceChange = Math.abs(decision.amzFinalPrice - context.amzCurrentPrice);
       if (priceChange < 0.01) {
         validation.blocked = true;
         validation.blockingReason = 'Cambio de precio no significativo';
@@ -487,26 +493,21 @@ class PricingEngine {
       };
 
       logger.info(`Executing pricing decision for ${product.erp_sku}:`, {
-        previousPrice: context.currentPrice,
-        newPrice: decision.finalPrice,
+        previousPrice: context.amzCurrentPrice,
+        newPrice: decision.amzFinalPrice,
         strategy: decision.strategy,
       });
 
       try {
-        // Actualizar precio en Amazon
-        const amazonResult = await amazonService.updateInventoryQuantity(
-          product.erp_sku,
-          product.amz_quantity || 0
-        );
-
         // Nota: En el servicio real, necesitarás un método específico para actualizar precios
+        // Actualizar precio en Amazon ./src/services/amazon/amazonService -> updateProductPrice
         // Por ahora simulamos que el precio se actualiza junto con el inventario
         execution.amazonUpdated = true;
         execution.apiResponse = amazonResult.amazon;
 
         // Actualizar localmente
         await Product.findByIdAndUpdate(product._id, {
-          amz_price: decision.finalPrice,
+          amz_price: decision.amzFinalPrice,
           'pricing.lastPriceUpdate': new Date(),
           'pricing.autoUpdateCount': (product.pricing?.autoUpdateCount || 0) + 1,
           'pricing.pricingStatus': 'ok',
@@ -518,7 +519,7 @@ class PricingEngine {
         execution.success = true;
 
         logger.info(`Price successfully updated for ${product.erp_sku}:`, {
-          newPrice: decision.finalPrice,
+          newPrice: decision.amzFinalPrice,
           strategy: decision.strategy,
         });
       } catch (updateError) {
@@ -563,18 +564,18 @@ class PricingEngine {
         changeType: changeType,
         prices: {
           previousPrice: {
-            amazon: context.currentPrice,
+            amazon: context.amzCurrentPrice,
             pvpm: context.pvpm,
             competitor: context.competitorPrice,
             fixed: context.hasFixedPrice ? context.fixedPrice : null,
           },
           newPrice: {
-            amazon: decision.finalPrice,
+            amazon: decision.amzFinalPrice,
             pvpm: context.pvpm,
             competitor: context.competitorPrice,
             fixed: context.hasFixedPrice ? context.fixedPrice : null,
           },
-          appliedPrice: decision.finalPrice,
+          appliedPrice: decision.amzFinalPrice,
           priceSource: decision.priceSource,
         },
         context: {
