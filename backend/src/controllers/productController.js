@@ -125,7 +125,7 @@ const getProductStats = async (req, res) => {
     const stats = await Product.aggregate([
       {
         $group: {
-          _id: '$status',
+          _id: '$erp_status',
           count: { $sum: 1 },
         },
       },
@@ -144,7 +144,7 @@ const getProductStats = async (req, res) => {
     });
 
     // Asegurar que todos los estados estén presentes
-    ['Active', 'Inactive', 'Incomplete'].forEach((status) => {
+    [0, 1].forEach((status) => {
       if (!formattedStats.byStatus[status]) {
         formattedStats.byStatus[status] = 0;
       }
