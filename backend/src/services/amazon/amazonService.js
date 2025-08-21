@@ -73,61 +73,106 @@ class AmazonService {
    * Mapea un listing a formato de producto (CORREGIDO)
    */
   mapListingToProduct(listing) {
-    const summary = listing.summaries?.[0] || {};
-    const attributes = listing.attributes || {};
-    const offers = listing.offers || [];
-    const fulfillmentAvailability = listing.fulfillmentAvailability || [];
-    const amz_asin = summary.asin;
-    const amz_title = summary.itemName || attributes.item_name?.[0]?.value || listing.sku;
-    const amz_brand = attributes.manufacturer?.[0]?.value || attributes.brand?.[0]?.value || '';
-    const amz_price = offers?.[0]?.price?.amount || 0;
-    const amz_quantity = fulfillmentAvailability?.[0]?.quantity || 0;
-    const amz_status = '';
-    const amz_imageUrl =
-      summary.mainImage?.link || attributes.main_product_image_locator?.[0]?.media_location || '';
-    const amz_condition = this.mapConditionType(
-      summary.conditionType || attributes.condition_type?.[0]?.value || 'new_new'
-    );
-    const amz_fulfillmentChannel = this.determineFulfillmentChannel(
-      fulfillmentAvailability,
-      attributes
-    );
+    try {
+      const summary = listing.summaries?.[0] || {};
+      const attributes = listing.attributes || {};
+      const offers = listing.offers || [];
+      const fulfillmentAvailability = listing.fulfillmentAvailability || [];
+      const amz_asin = summary.asin;
+      const amz_title = summary.itemName || attributes.item_name?.[0]?.value || listing.sku;
+      const amz_brand = attributes.manufacturer?.[0]?.value || attributes.brand?.[0]?.value || '';
+      const amz_price = offers?.[0]?.price?.amount || 0;
+      const amz_quantity = fulfillmentAvailability?.[0]?.quantity || 0;
+      const amz_status = '';
+      const amz_imageUrl =
+        summary.mainImage?.link || attributes.main_product_image_locator?.[0]?.media_location || '';
+      const amz_condition = this.mapConditionType(
+        summary.conditionType || attributes.condition_type?.[0]?.value || 'new_new'
+      );
+      const amz_fulfillmentChannel = this.determineFulfillmentChannel(
+        fulfillmentAvailability,
+        attributes
+      );
 
-    return {
-      amz_asin,
-      amz_sellerSku: listing.sku,
-      amz_title,
-      amz_brand,
-      amz_quantity,
-      amz_condition,
-      amz_fulfillmentChannel,
-      amz_status,
-      amz_price,
-      amz_currency: 'EUR',
-      amz_productType: summary.productType || attributes.product_type || 'physical',
-      amz_imageUrl,
-      amz_amazonData: {
-        itemName: amz_title,
-        listingId: listing.listingId || '',
-        productId: summary.productId || '',
-        productType: summary.productType || '',
-        productIdType: summary.productIdType || '',
-        itemCondition: summary.conditionType || 'new_new',
-        listingStatus: summary.status || [],
-        createdDate: summary.createdDate || '',
-        lastUpdatedDate: summary.lastUpdatedDate || '',
-        mainImageUrl: amz_imageUrl,
-        manufacturer: attributes.manufacturer?.[0]?.value || '',
-        ean:
-          attributes.externally_assigned_product_identifier?.find((id) => id.type === 'ean')
-            ?.value || '',
-        upc:
-          attributes.externally_assigned_product_identifier?.find((id) => id.type === 'upc')
-            ?.value || '',
-        material: attributes.material?.[0]?.value || '',
-        countryOfOrigin: attributes.country_of_origin?.[0]?.value || '',
-      },
+      return {
+        amz_asin,
+        amz_sellerSku: listing.sku,
+        amz_title,
+        amz_brand,
+        amz_quantity,
+        amz_condition,
+        amz_fulfillmentChannel,
+        amz_status,
+        amz_price,
+        amz_currency: 'EUR',
+        amz_productType: summary.productType || attributes.product_type || 'physical',
+        amz_imageUrl,
+        amz_amazonData: {
+          listingId: listing.listingId || '',
+          productId: summary.productId || '',
+          productIdType: summary.productIdType || '',
+          manufacturer: attributes.manufacturer?.[0]?.value || '',
+          ean:
+            attributes.externally_assigned_product_identifier?.find((id) => id.type === 'ean')
+              ?.value || '',
+          upc:
+            attributes.externally_assigned_product_identifier?.find((id) => id.type === 'upc')
+              ?.value || '',
+        },
+      };
+    } catch (error) {
+      logger.error('Error mapping listing to product:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Determina el canal de fulfillment
+   */
+  determineFulfillmentChannel(fulfillmentAvailability, attributes) {
+    // Verificar fulfillmentAvailability
+    if (fulfillmentAvailability && Array.isArray(fulfillmentAvailability)) {
+      for (const fa of fulfillmentAvailability) {
+        const code = fa.fulfillmentChannelCode;
+        if (code === 'AMAZON' || code === 'AFN') {
+          return 'AFN';
+        }
+      }
+    }
+
+    // Verificar attributes.fulfillment_availability
+    if (attributes.fulfillment_availability && Array.isArray(attributes.fulfillment_availability)) {
+      for (const fa of attributes.fulfillment_availability) {
+        const code = fa.fulfillment_channel_code;
+        if (code === 'AMAZON' || code === 'AFN') {
+          return 'AFN';
+        }
+      }
+    }
+
+    return 'MFN';
+  }
+
+  /**
+   * Mapea el tipo de condición (CORREGIDO)
+   */
+  mapConditionType(conditionType) {
+    if (!conditionType) return 'New';
+
+    const conditionMap = {
+      new_new: 'New',
+      used_like_new: 'Used',
+      used_very_good: 'Used',
+      used_good: 'Used',
+      used_acceptable: 'Used',
+      collectible_like_new: 'Collectible',
+      collectible_very_good: 'Collectible',
+      collectible_good: 'Collectible',
+      collectible_acceptable: 'Collectible',
+      refurbished: 'Refurbished',
     };
+
+    return conditionMap[conditionType] || 'New';
   }
 
   /**
@@ -144,7 +189,6 @@ class AmazonService {
         skipped: 0,
         sources: {
           listings: 0,
-          statusReport: 0,
         },
         unmatchedProducts: [],
       };
@@ -172,7 +216,7 @@ class AmazonService {
 
             if (result.created) {
               syncResults.created++;
-            } else {
+            } else if (result.updated) {
               syncResults.updated++;
             }
             syncResults.sources.listings++;
@@ -230,9 +274,37 @@ class AmazonService {
           if (key.startsWith('amz_')) {
             const newValue = amazonData[key];
             const currentValue = existingProduct[key];
-            if (this.valueHasChanged(currentValue, newValue)) {
-              updateData[key] = newValue;
-              hasChanges = true;
+
+            if (key === 'amz_amazonData') {
+              const nestedChanges = {};
+              let hasNestedChanges = false;
+              // Comparar cada propiedad dentro de amz_amazonData
+              Object.keys(currentValue || {}).forEach((nestedKey) => {
+                const newNestedValue = newValue[nestedKey];
+                const currentNestedValue = currentValue?.[nestedKey];
+
+                if (this.valueHasChanged(currentNestedValue, newNestedValue)) {
+                  nestedChanges[nestedKey] = newNestedValue;
+                  hasNestedChanges = true;
+                  logger.info(
+                    `Checking field ${nestedKey}: current=${currentNestedValue}:type=${typeof currentNestedValue}, new=${newNestedValue}:type=${typeof newNestedValue} -> hasChanges=true`
+                  );
+                }
+              });
+
+              // Si hay cambios en las propiedades anidadas, actualizar todo el objeto
+              if (hasNestedChanges) {
+                updateData[key] = {
+                  ...(currentValue || {}),
+                  ...nestedChanges,
+                };
+                hasChanges = true;
+              }
+            } else {
+              if (this.valueHasChanged(currentValue, newValue)) {
+                updateData[key] = newValue;
+                hasChanges = true;
+              }
             }
           }
         });
@@ -265,6 +337,7 @@ class AmazonService {
         return { product: result, created: true };
       }
     } catch (error) {
+      logger.error(`Error upserting product with erp_sku ${erpSku}:`, error);
       // Marcar producto con error
       await Product.findOneAndUpdate(
         { erp_sku: erpSku },
@@ -282,6 +355,55 @@ class AmazonService {
 
       throw error;
     }
+  }
+
+  valueHasChanged(currentValue, newValue) {
+    // Normalizar valores
+    const current = currentValue ?? null;
+    const newVal = newValue ?? null;
+
+    // Comparación rápida
+    if (current === newVal) {
+      return false;
+    }
+
+    // Si ambos son null/undefined, no hay cambio
+    if (current === null && newVal === null) {
+      return false;
+    }
+
+    // Si uno es null y el otro no, hay cambio
+    if (current === null || newVal === null) {
+      return true;
+    }
+
+    // Normalizar como strings y comparar (maneja números, strings, etc.)
+    const currentStr = String(current).trim();
+    const newStr = String(newVal).trim();
+
+    // Si son iguales como strings, no hay cambio
+    if (currentStr === newStr) {
+      return false;
+    }
+
+    // Intentar comparación numérica si ambos son convertibles a número
+    const currentNum = parseFloat(current);
+    const newNum = parseFloat(newVal);
+
+    if (!isNaN(currentNum) && !isNaN(newNum)) {
+      return currentNum !== newNum;
+    }
+
+    // Para objetos/arrays, usar JSON
+    if (typeof current === 'object' || typeof newVal === 'object') {
+      try {
+        return JSON.stringify(current) !== JSON.stringify(newVal);
+      } catch {
+        return true;
+      }
+    }
+
+    return true;
   }
 
   /**
@@ -325,7 +447,7 @@ class AmazonService {
   }
 
   /**
-   * Actualiza el stock de un producto en Amazon
+   * Actualiza el stock de un producto en Amazon (NUEVO - IMPLEMENTACIÓN REAL)
    */
   async updateInventoryQuantity(sellerSku, quantity) {
     try {
@@ -410,7 +532,7 @@ class AmazonService {
   }
 
   /**
-   * Actualiza stock de múltiples productos en Amazon
+   * Actualiza stock de múltiples productos en Amazon (MEJORADO)
    */
   async bulkUpdateInventory(updates) {
     const results = {

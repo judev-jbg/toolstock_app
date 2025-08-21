@@ -28,7 +28,24 @@ router.get('/stats', protect, getProductStats);
 router.get('/sync-needed', protect, getProductsNeedingSync);
 
 // Rutas de administración (requieren permisos de admin)
-router.post('/sync', protect, authorize('admin', 'root'), syncProducts);
+router.post('/sync/amz-to-db', protect, authorize('admin', 'root'), syncProducts);
+router.post('/sync/erp-to-db', protect, authorize('admin', 'root'), async (req, res) => {
+  try {
+    const erpSyncService = require('../services/erp/erpSyncService');
+    const results = await erpSyncService.syncProducts();
+
+    res.json({
+      message: 'ERP synchronization completed',
+      results,
+    });
+  } catch (error) {
+    logger.error('Error in manual ERP sync:', error);
+    res.status(500).json({
+      message: 'Error in ERP synchronization',
+      error: error.message,
+    });
+  }
+});
 router.get('/debug/endpoints', protect, authorize('admin', 'root'), getAvailableEndpoints);
 router.get('/debug/test-orders', protect, authorize('admin', 'root'), getTestOrders);
 router.get('/debug/config-check', protect, authorize('admin', 'root'), checkAmazonConfig);
@@ -195,24 +212,6 @@ router.get('/jobs/info', protect, authorize('admin', 'root'), (req, res) => {
     console.error('Error getting scheduler info:', error);
     res.status(500).json({
       message: 'Error obteniendo información del scheduler',
-      error: error.message,
-    });
-  }
-});
-
-router.post('/debug/force-erp-sync', protect, authorize('admin', 'root'), async (req, res) => {
-  try {
-    const erpSyncService = require('../services/erp/erpSyncService');
-    const results = await erpSyncService.syncProducts();
-
-    res.json({
-      message: 'ERP synchronization completed',
-      results,
-    });
-  } catch (error) {
-    logger.error('Error in manual ERP sync:', error);
-    res.status(500).json({
-      message: 'Error in ERP synchronization',
       error: error.message,
     });
   }

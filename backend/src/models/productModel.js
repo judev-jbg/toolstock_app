@@ -151,25 +151,11 @@ const productSchema = new mongoose.Schema(
     },
     // Datos adicionales de Amazon
     amz_amazonData: {
-      itemName: String,
-      itemDescription: String,
       listingId: String,
       productId: String,
       productIdType: String,
-      itemCondition: String,
-      itemConditionNote: String,
-      standardPrice: Number,
-      salePrice: Number,
-      saleStartDate: Date,
-      saleEndDate: Date,
-      mainImageUrl: String,
-      variations: [
-        {
-          theme: String,
-          asin: String,
-          attributes: mongoose.Schema.Types.Mixed,
-        },
-      ],
+      ean: String,
+      upc: String,
     },
     // Fechas de sincronización
     amz_lastSyncAt: {
