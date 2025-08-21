@@ -123,6 +123,7 @@ const LoadingRow = ({ columns, selectable }) => (
 export const DataTable = ({
   columns,
   data = [],
+  dataPagination = {},
   loading = false,
   selectable = false,
   onRowClick,
@@ -148,36 +149,38 @@ export const DataTable = ({
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelected = data.map((n) => n.id);
+      const newSelected = data.map((n) => n._id);
       setSelected(newSelected);
       return;
     }
     setSelected([]);
   };
 
-  const handleClick = (event, id) => {
-    if (selectable) {
-      const selectedIndex = selected.indexOf(id);
-      let newSelected = [];
+  const handleCheckboxClick = (event, id) => {
+    event.stopPropagation(); // Evitar que se propague al clic de fila
 
-      if (selectedIndex === -1) {
-        newSelected = newSelected.concat(selected, id);
-      } else if (selectedIndex === 0) {
-        newSelected = newSelected.concat(selected.slice(1));
-      } else if (selectedIndex === selected.length - 1) {
-        newSelected = newSelected.concat(selected.slice(0, -1));
-      } else if (selectedIndex > 0) {
-        newSelected = newSelected.concat(
-          selected.slice(0, selectedIndex),
-          selected.slice(selectedIndex + 1)
-        );
-      }
+    const selectedIndex = selected.indexOf(id);
+    let newSelected = [];
 
-      setSelected(newSelected);
+    if (selectedIndex === -1) {
+      newSelected = newSelected.concat(selected, id);
+    } else if (selectedIndex === 0) {
+      newSelected = newSelected.concat(selected.slice(1));
+    } else if (selectedIndex === selected.length - 1) {
+      newSelected = newSelected.concat(selected.slice(0, -1));
+    } else if (selectedIndex > 0) {
+      newSelected = newSelected.concat(
+        selected.slice(0, selectedIndex),
+        selected.slice(selectedIndex + 1)
+      );
     }
 
+    setSelected(newSelected);
+  };
+
+  const handleRowClick = (row) => {
     if (onRowClick) {
-      onRowClick(data.find((item) => item.id === id));
+      onRowClick(row);
     }
   };
 
@@ -237,9 +240,36 @@ export const DataTable = ({
     return value;
   };
 
+  const firstCurrentRowProduct =
+    (dataPagination.currentPage - 1) * dataPagination.itemsPerPage + 1;
+  const lastCurrentRowProduct = Math.min(
+    dataPagination.currentPage * dataPagination.itemsPerPage,
+    dataPagination.totalItems
+  );
+
   return (
     <Paper sx={{ width: "100%", mb: 2 }}>
-      <TableContainer sx={{ maxHeight: 500 }}>
+      <Box
+        sx={{
+          p: 2,
+          backgroundColor: "primary.lighter",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Typography variant="body2" color="primary.main">
+          Mostrando {data.length} de {dataPagination.totalItems} productos - Del{" "}
+          {firstCurrentRowProduct} al {lastCurrentRowProduct}
+        </Typography>
+        {selectable && selected.length > 0 && (
+          <Typography variant="body2" color="primary.main">
+            {selected.length} de {dataPagination.totalItems} filas seleccionadas
+          </Typography>
+        )}
+      </Box>
+
+      <TableContainer sx={{ maxHeight: 480 }}>
         <Table
           stickyHeader={stickyHeader}
           aria-labelledby="tableTitle"
@@ -281,17 +311,21 @@ export const DataTable = ({
               </TableRow>
             ) : (
               paginatedData.map((row, index) => {
-                const isItemSelected = isSelected(row.id);
+                const isItemSelected = isSelected(row._id);
                 const labelId = `enhanced-table-checkbox-${index}`;
 
                 return (
                   <TableRow
                     hover
-                    onClick={(event) => handleClick(event, row.id)}
+                    onClick={
+                      onRowClick && !selectable
+                        ? () => handleRowClick(row)
+                        : undefined
+                    }
                     role="checkbox"
                     aria-checked={isItemSelected}
                     tabIndex={-1}
-                    key={row.id}
+                    key={row._id}
                     selected={isItemSelected}
                     sx={{
                       cursor: onRowClick ? "pointer" : "default",
@@ -305,6 +339,9 @@ export const DataTable = ({
                         <Checkbox
                           color="primary"
                           checked={isItemSelected}
+                          onClick={(event) =>
+                            handleCheckboxClick(event, row._id)
+                          }
                           inputProps={{
                             "aria-labelledby": labelId,
                           }}
@@ -316,6 +353,15 @@ export const DataTable = ({
                         key={column.id}
                         align={column.align || "left"}
                         padding={column.disablePadding ? "none" : "normal"}
+                        onClick={
+                          onRowClick && selectable
+                            ? () => handleRowClick(row)
+                            : undefined
+                        }
+                        sx={{
+                          cursor:
+                            onRowClick && selectable ? "pointer" : "inherit",
+                        }}
                       >
                         {renderCell(row, column)}
                       </TableCell>
@@ -336,20 +382,6 @@ export const DataTable = ({
                               </IconButton>
                             </Tooltip>
                           )}
-                          {onDelete && (
-                            <Tooltip title="Eliminar">
-                              <IconButton
-                                size="small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onDelete(row);
-                                }}
-                                color="error"
-                              >
-                                <DeleteIcon />
-                              </IconButton>
-                            </Tooltip>
-                          )}
                         </Box>
                       </TableCell>
                     )}
@@ -360,21 +392,6 @@ export const DataTable = ({
           </TableBody>
         </Table>
       </TableContainer>
-      {pagination && (
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25, 50]}
-          component="div"
-          count={data.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          labelRowsPerPage="Filas por página:"
-          labelDisplayedRows={({ from, to, count }) =>
-            `${from}–${to} de ${count !== -1 ? count : `más de ${to}`}`
-          }
-        />
-      )}
     </Paper>
   );
 };

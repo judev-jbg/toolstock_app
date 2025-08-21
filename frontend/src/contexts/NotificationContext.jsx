@@ -172,7 +172,6 @@ export const NotificationProvider = ({ children }) => {
   // Componente de centro de notificaciones
   const NotificationCenter = () => (
     <Menu
-      anchorEl={notificationAnchor}
       open={Boolean(notificationAnchor)}
       onClose={handleNotificationMenuClose}
       PaperProps={{
@@ -246,7 +245,9 @@ export const NotificationProvider = ({ children }) => {
                       {notification.title}
                     </Typography>
                   }
-                  secondary={
+                />
+                <ListItemText
+                  primary={
                     <Box>
                       <Typography variant="body2" color="text.secondary">
                         {notification.message}

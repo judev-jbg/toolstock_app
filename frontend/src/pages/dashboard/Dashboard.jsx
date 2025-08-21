@@ -8,9 +8,6 @@ import {
   Paper,
   Avatar,
   Button,
-  Alert,
-  LinearProgress,
-  Divider,
 } from "@mui/material";
 
 import {
@@ -27,24 +24,13 @@ import { productService } from "../../services/api";
 import { formatNumber } from "../../utils/formatters";
 import { useNavigate } from "react-router-dom";
 import { useAlert } from "../../contexts/AlertContext";
+const baseURL = "http://localhost:4000/uploads/avatars";
 
 export const Dashboard = () => {
   const { user, isRoot } = useAuth();
   const navigate = useNavigate();
   const { AlertsList, getTotalAlerts, getCriticalAlerts } = useAlert();
   const { data: productStats } = useApi(() => productService.getStats(), []);
-  const { data: syncNeeded } = useApi(
-    () => productService.checkSyncNeeded(),
-    []
-  );
-  const { data: jobsStatus } = useApi(
-    () => (isRoot() ? productService.getJobsStatus() : null),
-    []
-  );
-
-  const handleSyncProducts = () => {
-    navigate("/catalog");
-  };
 
   const stats = [
     {
@@ -56,24 +42,17 @@ export const Dashboard = () => {
     },
     {
       title: "Productos Activos",
-      value: formatNumber(productStats?.byStatus?.Active || 0),
+      value: formatNumber(productStats?.byStatus?.[0]),
       change: "+0%",
       icon: <TrendingUpIcon />,
       color: "success",
     },
     {
       title: "Productos Inactivos",
-      value: formatNumber(productStats?.byStatus?.Inactive || 0),
+      value: formatNumber(productStats?.byStatus?.[1]),
       change: "+0%",
       icon: <WarningIcon />,
       color: "error",
-    },
-    {
-      title: "Productos Incompletos",
-      value: formatNumber(productStats?.byStatus?.Incomplete || 0),
-      change: "+0%",
-      icon: <WarningIcon />,
-      color: "warning",
     },
   ];
 
@@ -138,9 +117,7 @@ export const Dashboard = () => {
                   bgcolor: "primary.main",
                   mr: 2,
                 }}
-                src={
-                  user?.avatar ? `/uploads/avatars/${user.avatar}` : undefined
-                }
+                src={user?.avatar ? `${baseURL}/${user.avatar}` : undefined}
               >
                 {user?.name?.charAt(0).toUpperCase()}
               </Avatar>

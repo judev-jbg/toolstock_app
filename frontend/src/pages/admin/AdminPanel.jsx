@@ -10,21 +10,9 @@ import {
   Alert,
   LinearProgress,
   Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Paper,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
   Switch,
   FormControlLabel,
-  Divider,
   List,
   ListItem,
   ListItemText,
@@ -36,8 +24,6 @@ import {
   AccordionSummary,
   AccordionDetails,
   CircularProgress,
-  Tooltip,
-  Badge,
 } from "@mui/material";
 
 import {
@@ -73,28 +59,10 @@ const TabPanel = ({ children, value, index, ...other }) => (
 
 export const AdminPanel = () => {
   const { isRoot } = useAuth();
-  const { showSuccess, showError, showInfo } = useNotification();
-
+  const { showSuccess, showError } = useNotification();
   const [tabValue, setTabValue] = useState(0);
-  const [selectedJob, setSelectedJob] = useState(null);
-  const [jobDialogOpen, setJobDialogOpen] = useState(false);
-  const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(false);
-
-  // Verificar permisos
-  if (!isRoot()) {
-    return (
-      <Box sx={{ textAlign: "center", py: 8 }}>
-        <Typography variant="h5" color="error">
-          Acceso Denegado
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Solo los usuarios ROOT pueden acceder al panel de administración.
-        </Typography>
-      </Box>
-    );
-  }
 
   // API calls
   const {
@@ -118,11 +86,6 @@ export const AdminPanel = () => {
     []
   );
 
-  const { data: syncStatus, refetch: refetchSyncStatus } = useApi(
-    () => productService.checkSyncNeeded(),
-    []
-  );
-
   // Auto-refresh
   useEffect(() => {
     if (!autoRefresh) return;
@@ -130,11 +93,24 @@ export const AdminPanel = () => {
     const interval = setInterval(() => {
       refetchJobs();
       refetchJobsInfo();
-      refetchSyncStatus();
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [autoRefresh, refetchJobs, refetchJobsInfo, refetchSyncStatus]);
+  }, [autoRefresh, refetchJobs, refetchJobsInfo]);
+
+  // Verificar permisos
+  if (!isRoot()) {
+    return (
+      <Box sx={{ textAlign: "center", py: 8 }}>
+        <Typography variant="h5" color="error">
+          Acceso Denegado
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Solo los usuarios ROOT pueden acceder al panel de administración.
+        </Typography>
+      </Box>
+    );
+  }
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -143,27 +119,13 @@ export const AdminPanel = () => {
   const handleExecuteJob = async (jobName) => {
     setLoading(true);
     try {
-      const result = await productService.executeJob(jobName);
+      await productService.executeJob(jobName);
       showSuccess(`Job ${jobName} ejecutado correctamente`);
       refetchJobs();
       refetchJobsInfo();
     } catch (error) {
       showError(
         error.response?.data?.message || `Error ejecutando job ${jobName}`
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleTestOrders = async () => {
-    setLoading(true);
-    try {
-      const result = await productService.getTestOrders();
-      showInfo(`Se encontraron ${result.count} órdenes de prueba`);
-    } catch (error) {
-      showError(
-        error.response?.data?.message || "Error obteniendo órdenes de prueba"
       );
     } finally {
       setLoading(false);
@@ -224,7 +186,6 @@ export const AdminPanel = () => {
               refetchJobsInfo();
               refetchAmazonConfig();
               refetchEndpoints();
-              refetchSyncStatus();
             }}
           >
             Actualizar Todo
@@ -237,7 +198,7 @@ export const AdminPanel = () => {
         <Tabs value={tabValue} onChange={handleTabChange}>
           <Tab label="Jobs Programados" icon={<ScheduleIcon />} />
           <Tab label="Configuración Amazon" icon={<CloudIcon />} />
-          <Tab label="Debug & Testing" icon={<BugReportIcon />} />
+          <Tab label="Debug" icon={<BugReportIcon />} />
           <Tab label="Sistema" icon={<StorageIcon />} />
         </Tabs>
       </Box>
@@ -246,7 +207,7 @@ export const AdminPanel = () => {
       <TabPanel value={tabValue} index={0}>
         <Grid container spacing={3}>
           {/* Resumen de Jobs */}
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Card>
               <CardHeader
                 title="Estado General"
@@ -283,7 +244,7 @@ export const AdminPanel = () => {
           </Grid>
 
           {/* Lista de Jobs */}
-          <Grid item xs={12} md={8}>
+          <Grid size={{ xs: 12, sm: 8 }}>
             <Card>
               <CardHeader title="Jobs Programados" />
               <CardContent>
@@ -496,81 +457,12 @@ export const AdminPanel = () => {
               </CardContent>
             </Card>
           </Grid>
-
-          {/* Estado de Sincronización */}
-          <Grid item xs={12}>
-            <Card>
-              <CardHeader title="Estado de Sincronización" />
-              <CardContent>
-                {syncStatus && (
-                  <Box>
-                    <Alert
-                      severity={
-                        syncStatus.needsSync > 0 ? "warning" : "success"
-                      }
-                      sx={{ mb: 2 }}
-                    >
-                      {syncStatus.needsSync > 0
-                        ? `${syncStatus.needsSync} productos necesitan sincronización`
-                        : "Todos los productos están sincronizados"}
-                    </Alert>
-
-                    <Button
-                      variant="outlined"
-                      startIcon={<RefreshIcon />}
-                      onClick={() => productService.syncProducts()}
-                      disabled={loading}
-                    >
-                      Sincronizar Ahora
-                    </Button>
-                  </Box>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
         </Grid>
       </TabPanel>
 
       {/* Tab 3: Debug & Testing */}
       <TabPanel value={tabValue} index={2}>
         <Grid container spacing={3}>
-          {/* Herramientas de Testing */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardHeader title="Herramientas de Testing" />
-              <CardContent>
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  <Button
-                    variant="outlined"
-                    startIcon={<AssessmentIcon />}
-                    onClick={handleTestOrders}
-                    disabled={loading}
-                  >
-                    Probar Órdenes de Amazon
-                  </Button>
-
-                  <Button
-                    variant="outlined"
-                    startIcon={<CloudIcon />}
-                    onClick={() => productService.syncProducts()}
-                    disabled={loading}
-                  >
-                    Test Sincronización
-                  </Button>
-
-                  <Button
-                    variant="outlined"
-                    startIcon={<CodeIcon />}
-                    onClick={refetchEndpoints}
-                    disabled={loading}
-                  >
-                    Verificar Endpoints
-                  </Button>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
           {/* Logs del Sistema */}
           <Grid item xs={12} md={6}>
             <Card>
@@ -627,7 +519,7 @@ export const AdminPanel = () => {
                         Entorno
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {process.env.NODE_ENV || "development"}
+                        development
                       </Typography>
                     </Paper>
                   </Grid>
@@ -744,24 +636,6 @@ export const AdminPanel = () => {
                   <Typography variant="caption" color="text.secondary">
                     {jobsInfo?.activeJobs || 0} de {jobsInfo?.totalJobs || 0}{" "}
                     jobs activos
-                  </Typography>
-                </Box>
-
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Productos Sincronizados
-                  </Typography>
-                  <LinearProgress
-                    variant="determinate"
-                    value={
-                      syncStatus ? (syncStatus.needsSync > 0 ? 70 : 100) : 0
-                    }
-                    color={syncStatus?.needsSync > 0 ? "warning" : "success"}
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    {syncStatus?.needsSync > 0
-                      ? `${syncStatus.needsSync} pendientes`
-                      : "Todos sincronizados"}
                   </Typography>
                 </Box>
               </CardContent>

@@ -48,21 +48,6 @@ export const AlertProvider = ({ children }) => {
   useEffect(() => {
     const checkSystemAlerts = async () => {
       try {
-        // Verificar productos que necesitan sincronización
-        const syncStatus = await productService.checkSyncNeeded();
-        if (syncStatus.needsSync > 0) {
-          addSystemAlert({
-            id: "sync-needed",
-            type: "warning",
-            title: "Productos sin sincronizar",
-            message: `${syncStatus.needsSync} productos necesitan sincronización con Amazon`,
-            action: "sync-products",
-            priority: "medium",
-          });
-        } else {
-          removeSystemAlert("sync-needed");
-        }
-
         // Verificar configuración de Amazon
         const amazonConfig = await productService.checkAmazonConfig();
         if (!amazonConfig.allConfigured) {

@@ -24,6 +24,7 @@ import { FaCloudArrowUp as SaveIcon } from "react-icons/fa6";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNotification } from "../../contexts/NotificationContext";
 import { authService } from "../../services/api";
+const baseURL = "http://localhost:4000/uploads/avatars";
 
 export const Profile = () => {
   const { user, updateProfile } = useAuth();
@@ -162,9 +163,7 @@ export const Profile = () => {
                     bgcolor: "primary.main",
                     fontSize: "2rem",
                   }}
-                  src={
-                    user?.avatar ? `/uploads/avatars/${user.avatar}` : undefined
-                  }
+                  src={user?.avatar ? `${baseURL}/${user.avatar}` : undefined}
                 >
                   {user?.name?.charAt(0).toUpperCase()}
                 </Avatar>

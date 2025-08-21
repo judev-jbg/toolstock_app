@@ -59,16 +59,13 @@ export const Catalog = () => {
   const [anchorEl, setAnchorEl] = useState(null);
 
   // Modales
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [stockDialogOpen, setStockDialogOpen] = useState(false);
   const [bulkStockDialogOpen, setBulkStockDialogOpen] = useState(false);
-  const [syncDialogOpen, setSyncDialogOpen] = useState(false);
   const [statsDialogOpen, setStatsDialogOpen] = useState(false);
 
   // Estados para operaciones
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [stockValue, setStockValue] = useState("");
-  const [importFile, setImportFile] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const { showSuccess, showError, showInfo } = useNotification();
@@ -161,17 +158,31 @@ export const Catalog = () => {
       align: "right",
       sortable: true,
       render: (value, row) => (
-        <Typography
-          variant="body2"
-          fontWeight="medium"
-          color={
-            row.amz_price > row.erp_price_web_official * 1.21
-              ? "text.primary"
-              : "error.main"
-          }
-        >
-          {formatCurrency(value || row.amz_price)}
-        </Typography>
+        <Box textAlign="right">
+          <Typography
+            variant="body2"
+            fontWeight="medium"
+            color={
+              row.amz_price > row.erp_price_web_official * 1.21
+                ? "text.primary"
+                : "error.main"
+            }
+          >
+            {formatCurrency(value || row.amz_price)}
+          </Typography>
+          {row.pricing?.pvpm && (
+            <Typography
+              variant="caption"
+              color={
+                row.pricing?.pvpm > row.amz_price
+                  ? "error.main"
+                  : "text.secondary"
+              }
+            >
+              PVPm: {formatCurrency(row.pricing?.pvpm)}
+            </Typography>
+          )}
+        </Box>
       ),
     },
     {
@@ -180,42 +191,48 @@ export const Catalog = () => {
       align: "center",
       sortable: true,
       render: (value, row) => (
-        <Box
-          textAlign="center"
-          display={"flex"}
-          alignItems="center"
-          justifyContent={"center"}
-        >
-          <Typography
-            variant="body2"
-            fontWeight="medium"
-            color={value > 0 ? "success.main" : "error.main"}
+        <Box textAlign="center">
+          <Box
+            textAlign="center"
+            display={"flex"}
+            alignItems="center"
+            justifyContent={"center"}
           >
-            {formatNumber(value || row.erp_stock)}
+            <Typography
+              variant="body2"
+              fontWeight="medium"
+              color={value > 0 ? "success.main" : "error.main"}
+            >
+              amz: {formatNumber(value)}
+            </Typography>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditStock(row);
+              }}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Box>
+
+          <Typography variant="body2" color="text.secondary">
+            web: {row.erp_stock}
           </Typography>
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleEditStock(row);
-            }}
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
         </Box>
       ),
     },
 
-    {
-      id: "amz_lastSyncAt",
-      label: "Última Sync",
-      sortable: true,
-      render: (value) => (
-        <Typography variant="caption" color="text.secondary">
-          {value ? formatDate(value) : "Sin sincronizar"}
-        </Typography>
-      ),
-    },
+    // {
+    //   id: "amz_lastSyncAt",
+    //   label: "Última Sync",
+    //   sortable: true,
+    //   render: (value) => (
+    //     <Typography variant="caption" color="text.secondary">
+    //       {value ? formatDate(value) : "Sin sincronizar"}
+    //     </Typography>
+    //   ),
+    // },
   ];
 
   // Configuración de filtros
@@ -324,46 +341,6 @@ export const Catalog = () => {
       setLoading(false);
     }
   };
-
-  const handleImportProducts = async () => {
-    if (!importFile) return;
-
-    setLoading(true);
-    try {
-      const result = await productService.importProducts(importFile);
-      showSuccess(
-        `Importación completada: ${result.results.created} creados, ${result.results.updated} actualizados`
-      );
-      setImportDialogOpen(false);
-      setImportFile(null);
-      refetchProducts();
-    } catch (error) {
-      showError(error.response?.data?.message || "Error en la importación");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSyncProducts = async () => {
-    setLoading(true);
-    try {
-      const result = await productService.syncProducts();
-      showSuccess(
-        `Sincronización completada: ${result.results.updated} productos sincronizados`
-      );
-      setSyncDialogOpen(false);
-      refetchProducts();
-    } catch (error) {
-      showError(error.response?.data?.message || "Error en la sincronización");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDownloadTemplate = () => {
-    productService.downloadImportTemplate();
-  };
-
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -387,98 +364,19 @@ export const Catalog = () => {
           <Typography variant="h4" component="h1" gutterBottom>
             Catálogo de Productos
           </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Gestiona tu inventario de productos y sincronización con Amazon
-          </Typography>
         </Box>
 
         <Box sx={{ display: "flex", gap: 2 }}>
-          {/* <Button
-            variant="outlined"
-            startIcon={<GetAppIcon />}
-            onClick={handleDownloadTemplate}
-          >
-            Plantilla
-          </Button> */}
-          {/* <Button
-            variant="outlined"
-            startIcon={<FileUploadIcon />}
-            onClick={() => setImportDialogOpen(true)}
-          >
-            Importar
-          </Button> */}
           <ExportButton
             data={productsData?.products || []}
             filename="catalogo-productos"
             dataType="products"
           />
-          {/* <Button
-            variant="outlined"
-            startIcon={<SyncIcon />}
-            onClick={() => setSyncDialogOpen(true)}
-          >
-            Sincronizar
-          </Button> */}
           <IconButton onClick={handleMenuOpen}>
             <MoreVertIcon />
           </IconButton>
         </Box>
       </Box>
-
-      {/* Estadísticas */}
-      {/* {stats && (
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" color="primary">
-                  {formatNumber(stats.total)}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Total Productos
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" color="success.main">
-                  {formatNumber(stats.byStatus?.Active || 0)}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Activos
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" color="error.main">
-                  {formatNumber(stats.byStatus?.Inactive || 0)}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Inactivos
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" color="warning.main">
-                  {formatNumber(stats.byStatus?.Incomplete || 0)}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Incompletos
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )} */}
-
       {/* Filtros */}
       <SearchFilters
         searchValue={searchValue}
@@ -495,6 +393,7 @@ export const Catalog = () => {
       <DataTable
         columns={columns}
         data={productsData?.products || []}
+        dataPagination={productsData?.pagination || []}
         loading={productsLoading}
         selectable={true}
         onEdit={handleEditStock}
@@ -525,16 +424,6 @@ export const Catalog = () => {
         </Box>
       )}
 
-      {/* FAB para acciones rápidas */}
-      <Fab
-        color="primary"
-        aria-label="add"
-        sx={{ position: "fixed", bottom: 16, right: 16 }}
-        onClick={() => setImportDialogOpen(true)}
-      >
-        <AddIcon />
-      </Fab>
-
       {/* Menú contextual */}
       <Menu
         anchorEl={anchorEl}
@@ -564,48 +453,6 @@ export const Catalog = () => {
           <ListItemText>Estadísticas</ListItemText>
         </MenuItem>
       </Menu>
-
-      {/* Modales */}
-
-      {/* Modal de importación */}
-      <Dialog
-        open={importDialogOpen}
-        onClose={() => setImportDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Importar Productos desde Excel</DialogTitle>
-        <DialogContent>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            Selecciona un archivo Excel (.xlsx) con la estructura de la
-            plantilla descargada.
-          </Alert>
-          <input
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={(e) => setImportFile(e.target.files[0])}
-            style={{ marginBottom: 16 }}
-          />
-          {importFile && (
-            <Typography variant="body2" color="text.secondary">
-              Archivo seleccionado: {importFile.name}
-            </Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setImportDialogOpen(false)}>Cancelar</Button>
-          <Button onClick={handleDownloadTemplate} variant="outlined">
-            Descargar Plantilla
-          </Button>
-          <Button
-            onClick={handleImportProducts}
-            variant="contained"
-            disabled={!importFile || loading}
-          >
-            {loading ? <CircularProgress size={20} /> : "Importar"}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Modal de edición de stock */}
       <Dialog
@@ -646,37 +493,6 @@ export const Catalog = () => {
             disabled={loading || stockValue === ""}
           >
             {loading ? <CircularProgress size={20} /> : "Actualizar"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Modal de sincronización */}
-      <Dialog
-        open={syncDialogOpen}
-        onClose={() => setSyncDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Sincronizar con Amazon</DialogTitle>
-        <DialogContent>
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            Esta operación sincronizará todos los productos con Amazon SP-API.
-            Puede tardar varios minutos.
-          </Alert>
-          <Typography variant="body2">
-            Se actualizarán precios, stock y estados de los productos desde
-            Amazon.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setSyncDialogOpen(false)}>Cancelar</Button>
-          <Button
-            onClick={handleSyncProducts}
-            variant="contained"
-            disabled={loading}
-            color="warning"
-          >
-            {loading ? <CircularProgress size={20} /> : "Sincronizar"}
           </Button>
         </DialogActions>
       </Dialog>

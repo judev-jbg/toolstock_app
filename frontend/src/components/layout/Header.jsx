@@ -9,7 +9,6 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
-  Badge,
   Tooltip,
   Typography,
   useTheme,
@@ -17,7 +16,6 @@ import {
 
 import {
   MdSunny as LightModeIcon,
-  MdNotifications as NotificationsIcon,
   MdManageAccounts as PersonIcon,
   MdExitToApp as LogoutIcon,
 } from "react-icons/md";
@@ -27,6 +25,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useTheme as useAppTheme } from "../../contexts/ThemeContext";
 import { Breadcrumbs } from "./Breadcrumbs";
 import { useNotification } from "../../contexts/NotificationContext";
+const baseURL = "http://localhost:4000/uploads/avatars";
 
 const DRAWER_WIDTH = 280;
 const DRAWER_WIDTH_COLLAPSED = 64;
@@ -46,10 +45,6 @@ export const Header = ({ sidebarCollapsed = false }) => {
 
   const handleUserMenuClose = () => {
     setAnchorEl(null);
-  };
-
-  const handleNotificationMenuOpen = (event) => {
-    setNotificationAnchorEl(event.currentTarget);
   };
 
   const handleNotificationMenuClose = () => {
@@ -138,9 +133,7 @@ export const Header = ({ sidebarCollapsed = false }) => {
                     duration: theme.transitions.duration.shorter,
                   }),
                 }}
-                src={
-                  user?.avatar ? `/uploads/avatars/${user.avatar}` : undefined
-                }
+                src={user?.avatar ? `${baseURL}/${user.avatar}` : undefined}
               >
                 {user?.name?.charAt(0).toUpperCase()}
               </Avatar>

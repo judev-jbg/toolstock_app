@@ -27,6 +27,7 @@ import { FaCrown as AdminIcon } from "react-icons/fa";
 import Logo from "../common/Logo";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+const baseURL = "http://localhost:4000/uploads/avatars";
 
 const DRAWER_WIDTH = 280;
 const DRAWER_WIDTH_COLLAPSED = 64;
@@ -217,7 +218,7 @@ export const Sidebar = ({ collapsed, onToggleCollapse }) => {
                 mr: 2,
                 bgcolor: "primary.main",
               }}
-              src={user?.avatar ? `/uploads/avatars/${user.avatar}` : undefined}
+              src={user?.avatar ? `${baseURL}/${user.avatar}` : undefined}
             >
               {user?.name?.charAt(0).toUpperCase()}
             </Avatar>

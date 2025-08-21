@@ -124,28 +124,6 @@ export const productService = {
     return response.data;
   },
 
-  importProducts: async (file) => {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const response = await api.post("/products/import", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-      timeout: 300000, // 5 minutos timeout para importación
-    });
-    return response.data;
-  },
-
-  downloadImportTemplate: () => {
-    window.open(`${baseURL}/products/import/template`, "_blank");
-  },
-
-  syncProducts: async () => {
-    const response = await api.post("/products/sync");
-    return response.data;
-  },
-
   updateProductStock: async (id, quantity) => {
     const response = await api.put(`/products/${id}/stock`, { quantity });
     return response.data;
@@ -153,11 +131,6 @@ export const productService = {
 
   bulkUpdateStock: async (updates) => {
     const response = await api.put("/products/bulk-stock", { updates });
-    return response.data;
-  },
-
-  checkSyncNeeded: async () => {
-    const response = await api.get("/products/sync-needed");
     return response.data;
   },
 
